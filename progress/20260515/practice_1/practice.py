@@ -62,13 +62,42 @@
 # print("Sorted array is:", arr)
 
 # insertion sort
+# Mô phỏng từng bước:
+#
+# Ban dau: [12, 11, 13, 5, 6]
+#
+# i = 1, key = 11
+#   arr[0]=12 > key=11 → dich sang phai: [12, 12, 13, 5, 6]
+#   chen key=11 vao arr[0]:              [11, 12, 13, 5, 6]
+#
+# i = 2, key = 13
+#   arr[1]=12 < key=13 → dung, khong dich
+#   chen key=13 vao arr[2]:              [11, 12, 13, 5, 6]
+#
+# i = 3, key = 5
+#   arr[2]=13 > key=5 → dich sang phai: [11, 12, 13, 13, 6]
+#   arr[1]=12 > key=5 → dich sang phai: [11, 12, 12, 13, 6]
+#   arr[0]=11 > key=5 → dich sang phai: [11, 11, 12, 13, 6]
+#   chen key=5 vao arr[0]:              [ 5, 11, 12, 13, 6]
+#
+# i = 4, key = 6
+#   arr[3]=13 > key=6 → dich sang phai: [ 5, 11, 12, 13, 13]
+#   arr[2]=12 > key=6 → dich sang phai: [ 5, 11, 12, 12, 13]
+#   arr[1]=11 > key=6 → dich sang phai: [ 5, 11, 11, 12, 13]
+#   arr[0]= 5 < key=6 → dung, khong dich
+#   chen key=6 vao arr[1]:              [ 5,  6, 11, 12, 13]
+#
+# Ket qua: [5, 6, 11, 12, 13]
+
 arr = [12, 11, 13, 5, 6]
 n = len(arr)
+print(f"Ban dau:        {arr}")
 for i in range(1, n):
     key = arr[i]
     j = i - 1
-    while j >= 0 and key < arr[j]:
-        arr[j + 1] = arr[j]
+    while j>= 0 and key < arr[j]:
+        arr[j+1] = arr[j]
         j -= 1
     arr[j + 1] = key
-print("Sorted array is:", arr)
+print(f"Sau khi sap xep: {arr}")
+
