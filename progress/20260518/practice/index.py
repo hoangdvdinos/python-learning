@@ -120,3 +120,12 @@ def is_valid_brackets(s):
             stack.pop()
     return not stack
 print(is_valid_brackets("()[]{}"))  # True
+
+# Bài 6: Dictionary — thống kê từ văn bản
+paragraph = """python is a great language python is easy to learn
+fastapi is built on python fastapi is fast and easy to use"""
+
+word_count = {}
+for word in paragraph.split():
+    word_count[word] = word_count.get(word, 0) + 1
+print(word_count)
