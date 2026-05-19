@@ -104,3 +104,19 @@ average = sum(scores)/ len(scores)
 print(f"average: {average}")
 above_average = [s for s in scores if s > average]
 print(f"above average: {above_average}")
+
+# Bài 4: Stack và Queue
+# a) Dùng Stack kiểm tra chuỗi dấu ngoặc có hợp lệ không
+
+def is_valid_brackets(s):
+    stack = []
+    pairs = {")": "(", "}": "{", "]": "["}
+    for char in s:
+        if char in "([{":
+            stack.append(char)
+        elif char in ")]}":
+            if not stack or stack[-1] != pairs[char]:
+                return False
+            stack.pop()
+    return not stack
+print(is_valid_brackets("()[]{}"))  # True
