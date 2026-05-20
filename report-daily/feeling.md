@@ -1,0 +1,6 @@
+- Học nhanh nên mới chỉ mức hiểu code chưa đạt tới mức tư duy code
+- Khái niệm cần ôn lại
+    - decorator
+    - yeld
+    - generator
+    
