@@ -1,0 +1,687 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>Khối 8 — Pydantic v2 &amp; Quản Lý Phụ Thuộc | 5W1H | Java Dev</title>
+  </head>
+  <body>
+    <outline text="🟨 Khối 8 — Pydantic v2 &amp; Quản Lý Phụ Thuộc">
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        A — PYDANTIC v2 LÀ GÌ?           -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="A — Pydantic v2 Là Gì? Tại Sao FastAPI Phụ Thuộc?">
+
+        <outline text="WHAT — Pydantic là gì?">
+          <outline text="Thư viện validation &amp; serialization dựa trên Python type hints"/>
+          <outline text="Bạn khai báo class với type hints → Pydantic tự validate dữ liệu input"/>
+          <outline text="v2 (2023) viết lại bằng Rust → nhanh hơn v1 từ 5-50x"/>
+          <outline text="pip install pydantic  (FastAPI cài sẵn Pydantic)"/>
+        </outline>
+
+        <outline text="WHY — Tại sao FastAPI dùng Pydantic?">
+          <outline text="Request body → Pydantic parse + validate JSON → trả 422 nếu sai kiểu"/>
+          <outline text="Response model → Pydantic serialize object → JSON chuẩn"/>
+          <outline text="Swagger UI /docs → đọc Pydantic model → tự sinh documentation"/>
+          <outline text="Không có Pydantic = phải tự validate từng field = code lặp lại"/>
+        </outline>
+
+        <outline text="WHERE — Pydantic xuất hiện ở đâu trong FastAPI?">
+          <outline text="Request body:    @app.post('/') async def create(user: UserCreate):"/>
+          <outline text="Response model:  @app.get('/', response_model=UserResponse)"/>
+          <outline text="Config (.env):   class Settings(BaseSettings)"/>
+          <outline text="Path/Query:      FastAPI dùng Pydantic validate ngầm"/>
+        </outline>
+
+        <outline text="⚠️ JAVA KHÁC GÌ?">
+          <outline text="Java: @Valid + @NotNull + @Size trên từng field DTO (Bean Validation JSR 380)"/>
+          <outline text="Python: khai báo type hint là đủ — Pydantic tự hiểu"/>
+          <outline text="Java: Jackson serialize/deserialize riêng"/>
+          <outline text="Python: Pydantic làm cả validation LẪN serialization"/>
+          <outline text="Java Spring: @RequestBody UserDTO dto"/>
+          <outline text="FastAPI:     async def create(user: UserCreate)  → giống hệt"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        B — BaseModel CƠ BẢN              -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="B — BaseModel — Xây Dựng Schema Dữ Liệu">
+
+        <outline text="WHAT — BaseModel là gì?">
+          <outline text="Lớp cha của mọi Pydantic model"/>
+          <outline text="Kế thừa BaseModel → class của bạn tự có: validate, serialize, docs"/>
+        </outline>
+
+        <outline text="HOW — Khai báo cơ bản">
+          <outline text="from pydantic import BaseModel"/>
+          <outline text="class User(BaseModel):"/>
+          <outline text="    id: int"/>
+          <outline text="    name: str"/>
+          <outline text="    email: str"/>
+          <outline text="    is_active: bool = True   → có default = không bắt buộc"/>
+          <outline text="    age: int | None = None   → nullable + optional"/>
+        </outline>
+
+        <outline text="HOW — Tạo instance &amp; validate">
+          <outline text="user = User(id=1, name='Alice', email='alice@ex.com')"/>
+          <outline text="user = User(**{'id': 1, 'name': 'Alice', 'email': 'x'})  → từ dict"/>
+          <outline text="Pydantic TỰ ĐỘNG coerce: '42' → int (nếu có thể)"/>
+          <outline text="Sai kiểu không thể coerce → raise ValidationError ngay lập tức"/>
+        </outline>
+
+        <outline text="HOW — Đọc dữ liệu từ model">
+          <outline text="user.name          → truy cập attribute bình thường"/>
+          <outline text="user.model_fields  → dict các field đã khai báo"/>
+          <outline text="user.model_dump()  → {'id': 1, 'name': 'Alice', ...}  (dict)"/>
+        </outline>
+
+        <outline text="WHAT — Required vs Optional field">
+          <outline text="Required:   name: str              → BẮT BUỘC, không có default"/>
+          <outline text="Optional:   age: int = 0           → có default, có thể bỏ qua"/>
+          <outline text="Nullable:   age: int | None = None → có thể None, default là None"/>
+          <outline text="⚠️ age: int | None  (KHÔNG có = None) → vẫn BẮT BUỘC, chỉ chấp nhận None"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Java DTO:  private String name;  + @NotNull"/>
+          <outline text="Pydantic:  name: str             → @NotNull tự động"/>
+          <outline text="Java DTO:  private Integer age;  (nullable)"/>
+          <outline text="Pydantic:  age: int | None = None"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        C — FIELD() VÀ VALIDATION         -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="C — Field() — Tùy Chỉnh Validation Chi Tiết">
+
+        <outline text="WHAT — Field() là gì?">
+          <outline text="Hàm cung cấp metadata và ràng buộc cho từng field"/>
+          <outline text="Thay thế viết validator thủ công cho các rule đơn giản"/>
+        </outline>
+
+        <outline text="HOW — Cú pháp cơ bản">
+          <outline text="from pydantic import BaseModel, Field"/>
+          <outline text="class Product(BaseModel):"/>
+          <outline text="    name: str         = Field(min_length=2, max_length=100)"/>
+          <outline text="    price: float      = Field(gt=0, le=1_000_000)"/>
+          <outline text="    stock: int        = Field(default=0, ge=0)"/>
+          <outline text="    code: str         = Field(pattern=r'^[A-Z]{3}-\d{4}$')"/>
+          <outline text="    tags: list[str]   = Field(default_factory=list, max_length=10)"/>
+        </outline>
+
+        <outline text="HOW — Các ràng buộc số">
+          <outline text="gt=0    → greater than 0 (không gồm 0)"/>
+          <outline text="ge=0    → greater or equal 0 (gồm 0)"/>
+          <outline text="lt=100  → less than 100"/>
+          <outline text="le=100  → less or equal 100"/>
+          <outline text="multiple_of=5  → phải chia hết cho 5"/>
+        </outline>
+
+        <outline text="HOW — Các ràng buộc chuỗi">
+          <outline text="min_length=2   → ít nhất 2 ký tự"/>
+          <outline text="max_length=100 → tối đa 100 ký tự"/>
+          <outline text="pattern=r'...' → regex pattern (thay regex= của v1)"/>
+        </outline>
+
+        <outline text="HOW — alias (tên khác nhau giữa JSON và Python)">
+          <outline text="WHY: JSON dùng camelCase, Python dùng snake_case"/>
+          <outline text="class UserIn(BaseModel):"/>
+          <outline text="    first_name: str = Field(alias='firstName')"/>
+          <outline text="    created_at: str = Field(alias='createdAt')"/>
+          <outline text="user = UserIn.model_validate({'firstName': 'Alice', 'createdAt': '2024'})"/>
+          <outline text="user.first_name  → 'Alice'  (Python dùng snake_case)"/>
+          <outline text="⚠️ FastAPI: dùng model_config = ConfigDict(populate_by_name=True)"/>
+          <outline text="   → chấp nhận CẢ alias VÀ tên Python khi input"/>
+        </outline>
+
+        <outline text="HOW — description &amp; examples (cho Swagger)">
+          <outline text="price: float = Field(gt=0, description='Giá sản phẩm (VND)', examples=[99000])"/>
+          <outline text="→ Swagger UI /docs hiển thị mô tả và ví dụ tự động"/>
+        </outline>
+
+        <outline text="HOW — default_factory (mutable default)">
+          <outline text="⚠️ ĐỪNG dùng: tags: list = []  → tất cả instance DÙNG CHUNG 1 list!"/>
+          <outline text="✅ ĐÚNG:      tags: list = Field(default_factory=list)"/>
+          <outline text="Tương tự Java: List&lt;String&gt; tags = new ArrayList&lt;&gt;() trong constructor"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Java: @NotBlank @Size(min=2,max=100) @Pattern(regexp='...')"/>
+          <outline text="Pydantic: Field(min_length=2, max_length=100, pattern='...')"/>
+          <outline text="Java: @JsonProperty('firstName')  → alias"/>
+          <outline text="Pydantic: Field(alias='firstName')"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        D — NESTED MODEL                  -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="D — Nested Model — Model Lồng Nhau">
+
+        <outline text="WHAT — Nested Model là gì?">
+          <outline text="Field của model có kiểu là một Pydantic model khác"/>
+          <outline text="Pydantic tự validate model con khi validate model cha"/>
+        </outline>
+
+        <outline text="HOW — Cơ bản">
+          <outline text="class Address(BaseModel):"/>
+          <outline text="    street: str"/>
+          <outline text="    city: str"/>
+          <outline text="    zip_code: str = Field(pattern=r'^\d{5}$')"/>
+          <outline text=""/>
+          <outline text="class User(BaseModel):"/>
+          <outline text="    name: str"/>
+          <outline text="    address: Address        → nested model"/>
+          <outline text="    addresses: list[Address] → list of models"/>
+          <outline text=""/>
+          <outline text="user = User(name='Alice', address={'street': '123 Main', 'city': 'HCM', 'zip_code': '70000'})"/>
+          <outline text="→ Pydantic tự convert dict → Address object"/>
+        </outline>
+
+        <outline text="HOW — List of Models">
+          <outline text="class OrderItem(BaseModel):"/>
+          <outline text="    product_id: int"/>
+          <outline text="    quantity: int = Field(gt=0)"/>
+          <outline text="    price: float"/>
+          <outline text=""/>
+          <outline text="class Order(BaseModel):"/>
+          <outline text="    id: int"/>
+          <outline text="    items: list[OrderItem]  → list model lồng nhau"/>
+          <outline text="    total: float"/>
+          <outline text=""/>
+          <outline text="order = Order(id=1, items=[{'product_id': 1, 'quantity': 2, 'price': 50}], total=100)"/>
+        </outline>
+
+        <outline text="HOW — Dict of Models">
+          <outline text="class Config(BaseModel):"/>
+          <outline text="    services: dict[str, ServiceConfig]  → dict value là model"/>
+        </outline>
+
+        <outline text="HOW — Forward Reference (model tự tham chiếu)">
+          <outline text="class Category(BaseModel):"/>
+          <outline text="    name: str"/>
+          <outline text="    children: list['Category'] = []  → đệ quy"/>
+          <outline text="Category.model_rebuild()  → cần gọi sau khi định nghĩa xong"/>
+        </outline>
+
+        <outline text="WHY — Pattern thực tế trong FastAPI">
+          <outline text="Request schemas riêng với Response schemas:"/>
+          <outline text="UserCreate (input) → không có id, password rõ"/>
+          <outline text="UserInDB  (DB)     → có id, password hash"/>
+          <outline text="UserResponse (output) → không có password, có id"/>
+          <outline text="→ Tái sử dụng bằng kế thừa: class UserResponse(UserBase)"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Java: @Valid trên field lồng nhau → Bean Validation cascade"/>
+          <outline text="Pydantic: tự động validate nested, không cần annotation thêm"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        E — VALIDATORS                    -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="E — Validator — Validation Logic Tùy Chỉnh">
+
+        <outline text="WHAT — Khi nào cần validator tùy chỉnh?">
+          <outline text="Field() không đủ: cần logic phức tạp, so sánh nhiều field"/>
+          <outline text="Ví dụ: end_date phải sau start_date"/>
+          <outline text="Ví dụ: password phải khớp confirm_password"/>
+          <outline text="Ví dụ: email phải lowercase và trim space"/>
+        </outline>
+
+        <outline text="HOW — @field_validator (1 field)">
+          <outline text="from pydantic import field_validator"/>
+          <outline text=""/>
+          <outline text="class UserCreate(BaseModel):"/>
+          <outline text="    email: str"/>
+          <outline text="    password: str"/>
+          <outline text=""/>
+          <outline text="    @field_validator('email')"/>
+          <outline text="    @classmethod"/>
+          <outline text="    def email_must_be_lowercase(cls, v: str) -> str:"/>
+          <outline text="        v = v.strip().lower()"/>
+          <outline text="        if '@' not in v:"/>
+          <outline text="            raise ValueError('Email không hợp lệ')"/>
+          <outline text="        return v   → GIÁ TRỊ RETURN là giá trị sẽ được lưu"/>
+          <outline text=""/>
+          <outline text="    @field_validator('password')"/>
+          <outline text="    @classmethod"/>
+          <outline text="    def password_strength(cls, v: str) -> str:"/>
+          <outline text="        if len(v) &lt; 8:"/>
+          <outline text="            raise ValueError('Mật khẩu ít nhất 8 ký tự')"/>
+          <outline text="        return v"/>
+        </outline>
+
+        <outline text="HOW — @field_validator mode">
+          <outline text="mode='before'  (default) → chạy TRƯỚC type coercion"/>
+          <outline text="mode='after'             → chạy SAU type coercion (v đã đúng kiểu)"/>
+          <outline text="@field_validator('price', mode='before')"/>
+          <outline text="→ dùng 'before' khi cần transform input (strip, lower, parse)"/>
+          <outline text="→ dùng 'after' khi cần validate giá trị đã có đúng kiểu rồi"/>
+        </outline>
+
+        <outline text="HOW — @model_validator (nhiều field)">
+          <outline text="from pydantic import model_validator"/>
+          <outline text=""/>
+          <outline text="class DateRange(BaseModel):"/>
+          <outline text="    start_date: date"/>
+          <outline text="    end_date: date"/>
+          <outline text=""/>
+          <outline text="    @model_validator(mode='after')"/>
+          <outline text="    def check_date_range(self) -> 'DateRange':"/>
+          <outline text="        if self.end_date &lt;= self.start_date:"/>
+          <outline text="            raise ValueError('end_date phải sau start_date')"/>
+          <outline text="        return self"/>
+          <outline text=""/>
+          <outline text="class PasswordConfirm(BaseModel):"/>
+          <outline text="    password: str"/>
+          <outline text="    confirm_password: str"/>
+          <outline text=""/>
+          <outline text="    @model_validator(mode='after')"/>
+          <outline text="    def passwords_match(self) -> 'PasswordConfirm':"/>
+          <outline text="        if self.password != self.confirm_password:"/>
+          <outline text="            raise ValueError('Mật khẩu không khớp')"/>
+          <outline text="        return self"/>
+        </outline>
+
+        <outline text="HOW — @model_validator mode='before' (dict input)">
+          <outline text="mode='before'  → nhận raw dict, chạy TRƯỚC tạo instance"/>
+          <outline text="@model_validator(mode='before')"/>
+          <outline text="@classmethod"/>
+          <outline text="def pre_process(cls, data: dict) -> dict:"/>
+          <outline text="    data['name'] = data.get('name', '').strip()"/>
+          <outline text="    return data  → trả về dict đã transform"/>
+        </outline>
+
+        <outline text="HOW — ValidationError đọc lỗi">
+          <outline text="from pydantic import ValidationError"/>
+          <outline text="try:"/>
+          <outline text="    user = User(name='', email='bad')"/>
+          <outline text="except ValidationError as e:"/>
+          <outline text="    print(e.error_count())  → số lỗi"/>
+          <outline text="    for err in e.errors():"/>
+          <outline text="        print(err['loc'])    → ('email',) hoặc ('address', 'city')"/>
+          <outline text="        print(err['msg'])    → 'Value error, Email không hợp lệ'"/>
+          <outline text="        print(err['type'])   → 'value_error'"/>
+          <outline text="FastAPI tự bắt ValidationError → trả 422 Unprocessable Entity"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Java: @AssertTrue + method validator trong class"/>
+          <outline text="Java: ConstraintValidator&lt;A, T&gt; interface → phức tạp hơn"/>
+          <outline text="Pydantic: @field_validator + @model_validator → đơn giản, trong class"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        F — SERIALIZATION                 -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="F — Serialization — Chuyển Model → Dict / JSON">
+
+        <outline text="WHAT — Serialization là gì?">
+          <outline text="Chuyển Pydantic object → dict hoặc JSON string để trả về API"/>
+          <outline text="⚠️ Java: Jackson @JsonSerialize / ObjectMapper.writeValueAsString()"/>
+          <outline text="Python: model.model_dump() hoặc model.model_dump_json()"/>
+        </outline>
+
+        <outline text="HOW — model_dump() → dict">
+          <outline text="user.model_dump()"/>
+          <outline text="→ {'id': 1, 'name': 'Alice', 'email': 'alice@ex.com', 'is_active': True}"/>
+          <outline text=""/>
+          <outline text="Tham số quan trọng:"/>
+          <outline text="exclude={'password'}               → bỏ field password"/>
+          <outline text="include={'id', 'name'}             → chỉ lấy các field này"/>
+          <outline text="exclude_none=True                  → bỏ các field = None"/>
+          <outline text="exclude_unset=True                 → bỏ field chưa được set (dùng cho PATCH)"/>
+          <outline text="by_alias=True                      → dùng alias thay tên Python"/>
+        </outline>
+
+        <outline text="HOW — model_dump_json() → JSON string">
+          <outline text="user.model_dump_json()"/>
+          <outline text="→ '{&quot;id&quot;:1,&quot;name&quot;:&quot;Alice&quot;,...}'"/>
+          <outline text="user.model_dump_json(indent=2)     → pretty print"/>
+          <outline text="user.model_dump_json(by_alias=True) → camelCase nếu có alias"/>
+        </outline>
+
+        <outline text="HOW — model_validate() → parse từ ngoài vào">
+          <outline text="User.model_validate({'id': 1, 'name': 'Alice', 'email': 'x@x.com'})"/>
+          <outline text="→ parse dict → validate → trả User object"/>
+          <outline text="User.model_validate_json('{&quot;id&quot;: 1, ...}')"/>
+          <outline text="→ parse JSON string → validate → trả User object"/>
+        </outline>
+
+        <outline text="HOW — @computed_field (field tính toán, chỉ output)">
+          <outline text="from pydantic import computed_field"/>
+          <outline text="class User(BaseModel):"/>
+          <outline text="    first_name: str"/>
+          <outline text="    last_name: str"/>
+          <outline text=""/>
+          <outline text="    @computed_field"/>
+          <outline text="    @property"/>
+          <outline text="    def full_name(self) -> str:"/>
+          <outline text="        return f'{self.first_name} {self.last_name}'"/>
+          <outline text="→ full_name xuất hiện trong model_dump() nhưng không cần input"/>
+        </outline>
+
+        <outline text="HOW — model_config (cấu hình model)">
+          <outline text="from pydantic import ConfigDict"/>
+          <outline text="class User(BaseModel):"/>
+          <outline text="    model_config = ConfigDict("/>
+          <outline text="        str_strip_whitespace=True,  → tự trim space string"/>
+          <outline text="        str_to_lower=False,"/>
+          <outline text="        populate_by_name=True,      → chấp nhận cả alias lẫn tên field"/>
+          <outline text="        from_attributes=True,       → parse từ ORM object (SQLAlchemy)"/>
+          <outline text="        frozen=True,                → immutable sau khi tạo"/>
+          <outline text="    )"/>
+          <outline text="⚠️ from_attributes=True → quan trọng khi dùng SQLAlchemy ORM với Pydantic"/>
+        </outline>
+
+        <outline text="HOW — Pattern Request/Response tách biệt">
+          <outline text="class UserBase(BaseModel):         → chung: name, email"/>
+          <outline text="    name: str"/>
+          <outline text="    email: str"/>
+          <outline text=""/>
+          <outline text="class UserCreate(UserBase):        → input: thêm password"/>
+          <outline text="    password: str"/>
+          <outline text=""/>
+          <outline text="class UserResponse(UserBase):      → output: thêm id, KHÔNG có password"/>
+          <outline text="    id: int"/>
+          <outline text="    model_config = ConfigDict(from_attributes=True)"/>
+          <outline text=""/>
+          <outline text="→ @app.post('/users', response_model=UserResponse)"/>
+          <outline text="→ FastAPI tự serialize ORM object → UserResponse (loại password)"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Java: @JsonIgnore, @JsonProperty, @JsonView để control serialize"/>
+          <outline text="Pydantic: model_dump(exclude=, include=) → linh hoạt hơn"/>
+          <outline text="Java: separate DTO classes (Request/Response DTO)"/>
+          <outline text="Pydantic: class kế thừa BaseModel → tái sử dụng gọn hơn"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        G — PYDANTIC SETTINGS             -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="G — Pydantic Settings — Quản Lý Config từ .env">
+
+        <outline text="WHAT — Pydantic Settings là gì?">
+          <outline text="BaseSettings = BaseModel nhưng đọc giá trị từ environment variables"/>
+          <outline text="pip install pydantic-settings  (tách riêng từ Pydantic v2)"/>
+          <outline text="⚠️ Java Spring: @Value, @ConfigurationProperties, application.properties"/>
+          <outline text="Python: class Settings(BaseSettings) → đọc .env tự động"/>
+        </outline>
+
+        <outline text="HOW — Khai báo Settings">
+          <outline text="from pydantic_settings import BaseSettings, SettingsConfigDict"/>
+          <outline text=""/>
+          <outline text="class Settings(BaseSettings):"/>
+          <outline text="    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')"/>
+          <outline text=""/>
+          <outline text="    app_name: str = 'MyAPI'"/>
+          <outline text="    debug: bool = False"/>
+          <outline text="    database_url: str                   → bắt buộc, đọc từ .env"/>
+          <outline text="    secret_key: str                     → bắt buộc"/>
+          <outline text="    allowed_hosts: list[str] = ['*']    → tự parse 'host1,host2' → list"/>
+          <outline text="    max_connections: int = 10"/>
+        </outline>
+
+        <outline text="HOW — File .env">
+          <outline text="APP_NAME=ProductionAPI"/>
+          <outline text="DEBUG=false"/>
+          <outline text="DATABASE_URL=postgresql+asyncpg://user:pass@localhost/db"/>
+          <outline text="SECRET_KEY=supersecretkey123"/>
+          <outline text="ALLOWED_HOSTS=['localhost','api.example.com']"/>
+          <outline text="→ Pydantic đọc .env, TỰ ĐỘNG match tên (case-insensitive)"/>
+        </outline>
+
+        <outline text="HOW — Dùng trong FastAPI (Singleton pattern)">
+          <outline text="from functools import lru_cache"/>
+          <outline text=""/>
+          <outline text="@lru_cache   → chỉ tạo Settings 1 lần (singleton)"/>
+          <outline text="def get_settings() -> Settings:"/>
+          <outline text="    return Settings()"/>
+          <outline text=""/>
+          <outline text="→ Dùng trong FastAPI endpoint:"/>
+          <outline text="from fastapi import Depends"/>
+          <outline text="async def read_info(settings = Depends(get_settings)):"/>
+          <outline text="    return {'app': settings.app_name}"/>
+        </outline>
+
+        <outline text="HOW — Multiple environments">
+          <outline text=".env           → local development"/>
+          <outline text=".env.staging   → staging"/>
+          <outline text=".env.prod      → production (KHÔNG commit Git!)"/>
+          <outline text="SettingsConfigDict(env_file=f'.env.{os.getenv(\"ENV\", \"local\")}')"/>
+        </outline>
+
+        <outline text="HOW — Validate Settings khi khởi động">
+          <outline text="settings = Settings()  → Pydantic validate ngay khi app start"/>
+          <outline text="Thiếu DATABASE_URL → ValidationError ngay → app KHÔNG khởi động"/>
+          <outline text="→ Phát hiện lỗi config sớm, không đợi đến khi có request"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Java: @ConfigurationProperties(prefix='app') → class đọc config"/>
+          <outline text="Java: @Value('${database.url}') → inject từng giá trị"/>
+          <outline text="Pydantic Settings: gộp cả hai → khai báo class + đọc .env + validate"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        H — pip, pip-tools, uv            -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="H — Quản Lý Package: pip → pip-tools → uv">
+
+        <outline text="H1 — pip — Công Cụ Cơ Bản">
+
+          <outline text="WHAT → package manager mặc định của Python">
+            <outline text="Java Maven: pom.xml → pip: requirements.txt"/>
+            <outline text="Java Gradle: build.gradle → pip: requirements.txt"/>
+          </outline>
+
+          <outline text="HOW — Lệnh cơ bản">
+            <outline text="pip install fastapi               → cài 1 package"/>
+            <outline text="pip install fastapi==0.136.0      → cài version cụ thể"/>
+            <outline text="pip install fastapi&gt;=0.100,&lt;1.0   → range version"/>
+            <outline text="pip uninstall fastapi             → gỡ package"/>
+            <outline text="pip list                          → xem đã cài gì"/>
+            <outline text="pip show fastapi                  → chi tiết 1 package"/>
+            <outline text="pip freeze &gt; requirements.txt    → export danh sách đang dùng"/>
+            <outline text="pip install -r requirements.txt   → cài từ file"/>
+          </outline>
+
+          <outline text="⚠️ Vấn đề của pip thuần">
+            <outline text="pip freeze xuất cả dependency của dependency (rác)"/>
+            <outline text="Không lock exact version → khác môi trường = khác version"/>
+            <outline text="Không detect conflict version giữa các package"/>
+          </outline>
+
+        </outline>
+
+        <outline text="H2 — pip-tools — Lock File Chuẩn">
+
+          <outline text="WHAT → tách biệt direct deps và transitive deps, tạo lock file"/>
+          <outline text="HOW — Cài: pip install pip-tools"/>
+          <outline text="HOW — Workflow">
+            <outline text="1. Tạo requirements.in → chỉ khai báo DIRECT dependencies:"/>
+            <outline text="   fastapi&gt;=0.100"/>
+            <outline text="   pydantic-settings"/>
+            <outline text="   sqlalchemy[asyncio]&gt;=2.0"/>
+            <outline text=""/>
+            <outline text="2. pip-compile requirements.in → sinh requirements.txt (lock file)"/>
+            <outline text="   → chứa TẤT CẢ package + exact version + hash"/>
+            <outline text=""/>
+            <outline text="3. pip-sync requirements.txt → cài đúng theo lock file"/>
+            <outline text="   → xóa package thừa, cài đủ package cần"/>
+          </outline>
+          <outline text="WHY → reproducible build — mọi máy cài giống hệt nhau"/>
+
+        </outline>
+
+        <outline text="H3 — uv — Công Cụ Mới Nhất (Khuyến Khích Dùng)">
+
+          <outline text="WHAT → all-in-one: thay pip + pip-tools + virtualenv + pyenv">
+            <outline text="Viết bằng Rust → nhanh hơn pip 10-100x"/>
+            <outline text="Tương thích hoàn toàn với pip"/>
+          </outline>
+
+          <outline text="HOW — Cài đặt">
+            <outline text="curl -LsSf https://astral.sh/uv/install.sh | sh   (macOS/Linux)"/>
+            <outline text="winget install astral-sh.uv                       (Windows)"/>
+          </outline>
+
+          <outline text="HOW — Khởi tạo project mới">
+            <outline text="uv init my-api         → tạo project structure"/>
+            <outline text="cd my-api"/>
+            <outline text="uv add fastapi         → thêm dependency vào pyproject.toml"/>
+            <outline text="uv add pydantic-settings sqlalchemy[asyncio]"/>
+            <outline text="uv add --dev pytest ruff mypy  → dev dependencies"/>
+          </outline>
+
+          <outline text="HOW — Quản lý môi trường ảo">
+            <outline text="uv venv             → tạo .venv trong project"/>
+            <outline text="uv sync             → cài đúng theo uv.lock"/>
+            <outline text="uv run python main.py  → chạy trong venv mà không cần activate"/>
+            <outline text="uv run pytest          → chạy test"/>
+            <outline text="uv run uvicorn main:app --reload  → chạy FastAPI"/>
+          </outline>
+
+          <outline text="HOW — pyproject.toml (thay requirements.txt)">
+            <outline text="[project]"/>
+            <outline text="name = 'my-api'"/>
+            <outline text="version = '0.1.0'"/>
+            <outline text="dependencies = ["/>
+            <outline text="    'fastapi&gt;=0.136',"/>
+            <outline text="    'pydantic-settings&gt;=2.0',"/>
+            <outline text="]"/>
+            <outline text=""/>
+            <outline text="[tool.uv]"/>
+            <outline text="dev-dependencies = ['pytest', 'ruff', 'mypy']"/>
+          </outline>
+
+          <outline text="HOW — uv.lock (tự sinh, nên commit Git)">
+            <outline text="uv.lock = exact version của TẤT CẢ package"/>
+            <outline text="Tương tự: package-lock.json (Node), Cargo.lock (Rust)"/>
+            <outline text="Java Maven: không có lock file → vấn đề reproducibility"/>
+          </outline>
+
+          <outline text="HOW — Quản lý Python version">
+            <outline text="uv python install 3.12   → cài Python 3.12"/>
+            <outline text="uv python pin 3.12        → pin version cho project"/>
+            <outline text="uv python list            → xem các version đã cài"/>
+            <outline text="Thay thế pyenv hoàn toàn"/>
+          </outline>
+
+          <outline text="⚠️ JAVA SO SÁNH">
+            <outline text="Java Maven: pom.xml (deps) + mvn install"/>
+            <outline text="uv:         pyproject.toml (deps) + uv sync"/>
+            <outline text="Maven: không có true lock file"/>
+            <outline text="uv:    uv.lock → reproducible 100%"/>
+          </outline>
+
+        </outline>
+
+        <outline text="H4 — Khi Nào Dùng Gì?">
+          <outline text="pip            → script nhỏ, học, thử nghiệm nhanh"/>
+          <outline text="pip-tools      → team dùng pip quen, cần lock file"/>
+          <outline text="uv             → project mới, team mới — KHUYẾN KHÍCH"/>
+          <outline text="⚠️ KHÔNG mix pip và uv trong cùng project"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        I — TỔNG HỢP JAVA vs PYTHON       -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="I — JAVA vs PYTHON — ĐỐI CHIẾU NHANH KHỐI 8">
+
+        <outline text="Validation framework">
+          <outline text="Java   → Bean Validation (JSR 380): @NotNull @Size @Pattern @Valid"/>
+          <outline text="Python → Pydantic: type hint + Field() + @field_validator"/>
+        </outline>
+        <outline text="Schema class">
+          <outline text="Java   → DTO / Record class + annotation"/>
+          <outline text="Python → class Model(BaseModel) — annotation IS validation"/>
+        </outline>
+        <outline text="Serialize → JSON">
+          <outline text="Java   → Jackson: @JsonIgnore @JsonProperty ObjectMapper"/>
+          <outline text="Python → model.model_dump(exclude=, by_alias=)"/>
+        </outline>
+        <outline text="Parse JSON → Object">
+          <outline text="Java   → ObjectMapper.readValue(json, User.class)"/>
+          <outline text="Python → User.model_validate_json(json_string)"/>
+        </outline>
+        <outline text="Config từ env/file">
+          <outline text="Java   → @ConfigurationProperties + application.yml"/>
+          <outline text="Python → class Settings(BaseSettings) + .env file"/>
+        </outline>
+        <outline text="Package manager">
+          <outline text="Java   → Maven (pom.xml) / Gradle (build.gradle)"/>
+          <outline text="Python → uv (pyproject.toml) — KHUYẾN KHÍCH 2024+"/>
+        </outline>
+        <outline text="Lock file">
+          <outline text="Java   → Maven: không có lock file thực sự"/>
+          <outline text="Python → uv.lock hoặc requirements.txt (pip-compile)"/>
+        </outline>
+        <outline text="Cross-field validation">
+          <outline text="Java   → ConstraintValidator interface → verbose"/>
+          <outline text="Python → @model_validator(mode='after') → 5 dòng"/>
+        </outline>
+        <outline text="ORM → API response">
+          <outline text="Java   → ModelMapper / MapStruct (DTO ↔ Entity)"/>
+          <outline text="Python → ConfigDict(from_attributes=True) → Pydantic đọc ORM object"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        J — CHECKLIST THỰC HÀNH           -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="J — 🔥 Checklist Thực Hành Khối 8">
+
+        <outline text="Bài 1 — BaseModel + Field">
+          <outline text="Tạo ProductCreate: name(2-100), price(gt=0), stock(ge=0), code(pattern)"/>
+          <outline text="Tạo ProductResponse: thêm id, computed field discount_price"/>
+          <outline text="Test: Product(name='', price=-1) → đọc ValidationError.errors()"/>
+        </outline>
+
+        <outline text="Bài 2 — Nested Model">
+          <outline text="Order có list[OrderItem], mỗi item có quantity(gt=0), price(gt=0)"/>
+          <outline text="@computed_field total: float = sum(item.price * item.quantity)"/>
+          <outline text="model_dump(exclude_none=True) → xem kết quả"/>
+        </outline>
+
+        <outline text="Bài 3 — Validators">
+          <outline text="UserCreate: email lowercase + @field_validator"/>
+          <outline text="PasswordForm: password == confirm_password + @model_validator"/>
+          <outline text="DateRange: end_date &gt; start_date + @model_validator"/>
+        </outline>
+
+        <outline text="Bài 4 — Pydantic Settings">
+          <outline text="Tạo .env với DATABASE_URL, SECRET_KEY, DEBUG=false"/>
+          <outline text="class Settings(BaseSettings) đọc .env"/>
+          <outline text="@lru_cache def get_settings() → dùng trong FastAPI Depends()"/>
+        </outline>
+
+        <outline text="Bài 5 — uv Project">
+          <outline text="uv init fastapi-demo"/>
+          <outline text="uv add fastapi pydantic-settings uvicorn"/>
+          <outline text="uv add --dev pytest ruff mypy"/>
+          <outline text="uv run uvicorn main:app --reload → test /docs"/>
+        </outline>
+
+      </outline>
+
+    </outline>
+  </body>
+</opml>

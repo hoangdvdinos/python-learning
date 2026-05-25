@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>08 — Type Hints &amp; Async | 5W1H | Python → FastAPI</title>
+  </head>
+  <body>
+    <outline text="🐍 Type Hints &amp; Async Programming">
+
+      <!-- ████████████████████████████████████████ -->
+      <!--           PHẦN A: TYPE HINTS             -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="A — TYPE HINTS">
+
+        <outline text="A1 — Type Hints là gì?">
+          <outline text="WHAT — Là gì?">
+            <outline text="Cú pháp gắn nhãn kiểu cho biến và hàm"/>
+            <outline text="x: int = 5  |  def foo(a: str) -> bool:"/>
+            <outline text="Chỉ là ANNOTATION — Python KHÔNG enforce lúc chạy"/>
+          </outline>
+          <outline text="WHY — Tại sao dùng?">
+            <outline text="IDE autocomplete chính xác hơn"/>
+            <outline text="mypy phát hiện bug trước khi chạy"/>
+            <outline text="FastAPI dùng để tự động validate request/response"/>
+            <outline text="Code dễ đọc, dễ review hơn nhiều"/>
+          </outline>
+          <outline text="WHEN — Khi nào bắt buộc?">
+            <outline text="FastAPI → BẮT BUỘC (Pydantic đọc type hints)"/>
+            <outline text="Team project → nên dùng toàn bộ"/>
+            <outline text="Script nhỏ 1 lần → tùy chọn"/>
+          </outline>
+          <outline text="HOW — Cú pháp">
+            <outline text="Biến: name: str = 'Hoàng'"/>
+            <outline text="Hàm: def greet(name: str, age: int) -> str:"/>
+            <outline text="Chưa gán: user_id: int  (khai báo trước, gán sau)"/>
+          </outline>
+          <outline text="⚠️ JAVA KHÁC GÌ?">
+            <outline text="Java: String name — bắt buộc, compiler check"/>
+            <outline text="Python: name: str — tùy chọn, chỉ mypy check"/>
+            <outline text="x: int = 'hello'  → Python KHÔNG lỗi runtime!"/>
+          </outline>
+        </outline>
+
+        <outline text="A2 — Collection Types">
+          <outline text="WHAT — Các kiểu có sẵn (Python 3.9+)">
+            <outline text="list[int]         → danh sách số nguyên"/>
+            <outline text="dict[str, int]    → key chuỗi, value số"/>
+            <outline text="set[int]          → tập hợp không trùng"/>
+            <outline text="tuple[int, int]   → tuple 2 phần tử cố định"/>
+            <outline text="tuple[float, ...] → tuple độ dài bất kỳ"/>
+          </outline>
+          <outline text="WHY — Python 3.9+ dùng built-in thay vì typing?">
+            <outline text="Trước 3.9: from typing import List, Dict → List[int]"/>
+            <outline text="Từ 3.9+: list[int] trực tiếp — ngắn hơn, chuẩn hơn"/>
+          </outline>
+          <outline text="HOW — Nested types">
+            <outline text="list[list[int]]              → ma trận"/>
+            <outline text="dict[str, list[str]]         → {'roles': ['admin']}"/>
+            <outline text="dict[str, dict[str, int]]    → nested object"/>
+          </outline>
+        </outline>
+
+        <outline text="A3 — Optional | Union | Any">
+
+          <outline text="Optional[T]">
+            <outline text="WHAT → T | None — có thể là giá trị hoặc None"/>
+            <outline text="WHY  → biểu đạt 'có thể không có' — tránh bug NullPointer"/>
+            <outline text="HOW  → def find(id: int) -> dict | None:  (Python 3.10+)"/>
+            <outline text="HOW  → def create(email: Optional[str] = None) -> dict:"/>
+            <outline text="⚠️ Java Optional&lt;T&gt; là wrapper object có .get() .orElse()"/>
+            <outline text="⚠️ Python Optional[T] chỉ là type hint, KHÔNG có method gì"/>
+          </outline>
+
+          <outline text="Union / X | Y">
+            <outline text="WHAT → chấp nhận nhiều kiểu khác nhau"/>
+            <outline text="WHY  → hàm xử lý input linh hoạt (int hoặc str)"/>
+            <outline text="HOW  → def process(id: int | str) -> str:  (3.10+)"/>
+            <outline text="HOW  → Union[int, str]  (3.9 trở về)"/>
+            <outline text="HOW  → str | int | float | None  (nhiều kiểu)"/>
+          </outline>
+
+          <outline text="Any">
+            <outline text="WHAT → tắt hoàn toàn kiểm tra kiểu"/>
+            <outline text="WHY  → JSON động không biết schema trước"/>
+            <outline text="WHEN → TRÁNH dùng — mất hết lợi ích type hints"/>
+            <outline text="HOW  → def parse_json(raw: str) -> Any:  (hợp lý)"/>
+            <outline text="⚠️ BAD: def foo(x: Any, y: Any) -> Any: — vô nghĩa"/>
+          </outline>
+
+        </outline>
+
+        <outline text="A4 — Annotating Functions">
+
+          <outline text="Cú pháp đầy đủ">
+            <outline text="WHAT → khai báo kiểu tham số + return type"/>
+            <outline text="HOW  → def foo(name: str, age: int) -> str:"/>
+            <outline text="HOW  → -> None   (= void trong Java)"/>
+            <outline text="HOW  → -> NoReturn  (hàm throw exception hoặc while True)"/>
+          </outline>
+
+          <outline text="*args và **kwargs">
+            <outline text="*args: int     → tuple positional args, mỗi item là int"/>
+            <outline text="**kwargs: str  → dict keyword args, mỗi value là str"/>
+            <outline text="def sum_all(*numbers: int) -> int: return sum(numbers)"/>
+          </outline>
+
+          <outline text="Callable — kiểu cho hàm">
+            <outline text="WHAT → dùng khi truyền hàm như tham số (callback, HOF)"/>
+            <outline text="HOW  → Callable[[int, int], int]  → nhận 2 int, trả int"/>
+            <outline text="HOW  → Callable[..., None]        → không quan tâm params"/>
+            <outline text="HOW  → on_success: Callable[[list[int]], None] | None = None"/>
+            <outline text="⚠️ Java: functional interface (@FunctionalInterface)"/>
+          </outline>
+
+        </outline>
+
+        <outline text="A5 — Generic Types (TypeVar)">
+
+          <outline text="WHAT — TypeVar là gì?">
+            <outline text="Placeholder cho kiểu chưa biết — như &lt;T&gt; trong Java"/>
+            <outline text="T = TypeVar('T')           → tổng quát, nhận mọi kiểu"/>
+            <outline text="N = TypeVar('N', int, float) → chỉ nhận int hoặc float"/>
+          </outline>
+          <outline text="WHY — Tại sao cần?">
+            <outline text="Viết hàm hoạt động với nhiều kiểu mà vẫn type-safe"/>
+            <outline text="mypy hiểu: first([1,2,3]) → trả int, first(['a']) → trả str"/>
+          </outline>
+          <outline text="HOW — Generic function">
+            <outline text="def first(items: list[T]) -> T | None:"/>
+            <outline text="    return items[0] if items else None"/>
+          </outline>
+          <outline text="HOW — Generic class">
+            <outline text="class Stack(Generic[T]):"/>
+            <outline text="    def push(self, item: T) -> None:"/>
+            <outline text="    def pop(self) -> T:"/>
+            <outline text="int_stack: Stack[int] = Stack()  → như Stack&lt;Integer&gt; Java"/>
+          </outline>
+          <outline text="HOW — Abstract collection types">
+            <outline text="Sequence[int]  → list/tuple/range/str — rộng hơn list"/>
+            <outline text="Mapping[str,int] → dict-like"/>
+            <outline text="Iterable[str]  → bất kỳ thứ gì for được"/>
+            <outline text="Ưu tiên Sequence &gt; list khi không cần mutate"/>
+          </outline>
+
+        </outline>
+
+        <outline text="A6 — TypedDict vs NamedTuple vs dataclass">
+
+          <outline text="TypedDict">
+            <outline text="WHAT → dict với schema cố định, mypy kiểm tra từng key"/>
+            <outline text="WHY  → làm việc với JSON/REST API — vẫn là dict thật"/>
+            <outline text="HOW  → class UserDict(TypedDict): id: int; name: str"/>
+            <outline text="HOW  → NotRequired[str]  → key không bắt buộc (3.11+)"/>
+            <outline text="⚠️ mypy báo lỗi nếu truy cập key không có trong TypedDict"/>
+          </outline>
+
+          <outline text="NamedTuple">
+            <outline text="WHAT → tuple bất biến có tên field và kiểu"/>
+            <outline text="WHY  → lightweight, immutable, hashable → dùng làm dict key"/>
+            <outline text="HOW  → class Point(NamedTuple): x: float; y: float"/>
+            <outline text="HOW  → p = Point(3.0, 4.0)  → p.x  hoặc  p[0]"/>
+            <outline text="HOW  → Hỗ trợ method (def to_hex(self) -> str:)"/>
+            <outline text="⚠️ Java tương đương: record (Java 16+) — immutable data holder"/>
+          </outline>
+
+          <outline text="Khi nào dùng gì?">
+            <outline text="TypedDict  → JSON / API serialization / dict-compatible"/>
+            <outline text="NamedTuple → immutable, hashable, tuple-compatible"/>
+            <outline text="dataclass  → mutable, có logic, kế thừa, OOP đầy đủ"/>
+          </outline>
+
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--        PHẦN B: ASYNC PROGRAMMING         -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="B — ASYNC PROGRAMMING">
+
+        <outline text="B1 — Tại Sao Cần Async?">
+          <outline text="WHAT — Vấn đề blocking I/O là gì?">
+            <outline text="Sync: fetch_user(1) → chờ 1s → fetch_product() → chờ 1s → tổng 2s"/>
+            <outline text="Async: cả hai gọi cùng lúc → chờ song song → tổng ~1s"/>
+            <outline text="I/O: đọc DB, gọi HTTP, đọc file → thread NGỒI KHÔNG trong lúc chờ"/>
+          </outline>
+          <outline text="WHY — Tại sao không dùng nhiều thread như Java?">
+            <outline text="Thread tốn ~1MB RAM mỗi cái"/>
+            <outline text="1000 concurrent request = 1000 thread = 1GB RAM (Flask/Spring MVC)"/>
+            <outline text="Async: 1 thread xử lý hàng nghìn I/O nhờ event loop"/>
+          </outline>
+          <outline text="WHERE — FastAPI dùng async ở đâu?">
+            <outline text="Mọi endpoint gọi DB hoặc HTTP → dùng async def"/>
+            <outline text="Uvicorn/Starlette (nền FastAPI) chạy trên event loop"/>
+            <outline text="Kết quả: FastAPI nhanh hơn Flask 3-10x trong I/O-heavy workload"/>
+          </outline>
+          <outline text="HOW — Minh họa số liệu">
+            <outline text="5 HTTP request (mỗi cái 200ms):"/>
+            <outline text="Sync:  ~1.00s  (5 × 0.2s tuần tự)"/>
+            <outline text="Async: ~0.25s  (chỉ mất thời gian request CHẬM NHẤT)"/>
+          </outline>
+        </outline>
+
+        <outline text="B2 — Coroutine &amp; Event Loop">
+
+          <outline text="WHAT — Coroutine là gì?">
+            <outline text="Hàm có thể TẠM DỪNG và TIẾP TỤC mà không block thread"/>
+            <outline text="Định nghĩa bằng: async def"/>
+            <outline text="Gọi async def → trả về coroutine OBJECT, chưa chạy"/>
+            <outline text="⚠️ Java: CompletableFuture — nhưng cú pháp đơn giản hơn nhiều"/>
+          </outline>
+
+          <outline text="WHAT — Event Loop là gì?">
+            <outline text="Vòng lặp theo dõi hàng đợi các task cần chạy"/>
+            <outline text="Task A await → event loop chuyển sang Task B"/>
+            <outline text="I/O xong → event loop quay lại Task A tiếp tục"/>
+            <outline text="Chỉ có 1 thread nhưng xử lý nhiều task 'đồng thời'"/>
+          </outline>
+
+          <outline text="HOW — Chạy coroutine">
+            <outline text="asyncio.run(coroutine)  → entry point chính"/>
+            <outline text="Làm 3 việc: tạo event loop → chạy → đóng"/>
+            <outline text="Chỉ gọi asyncio.run() 1 lần ở top-level (main)"/>
+          </outline>
+
+          <outline text="HOW — await">
+            <outline text="Dùng bên trong async def để gọi coroutine khác"/>
+            <outline text="result = await some_async_func()"/>
+            <outline text="await = tạm dừng, nhường event loop, KHÔNG block thread"/>
+            <outline text="⚠️ Java .get() block thread | Python await KHÔNG block"/>
+          </outline>
+
+        </outline>
+
+        <outline text="B3 — Task &amp; gather — Chạy Song Song">
+
+          <outline text="WHAT — asyncio.create_task()">
+            <outline text="Lên lịch coroutine chạy NGAY LẬP TỨC (không cần await ngay)"/>
+            <outline text="task = asyncio.create_task(fetch('ServiceA', 1.0))"/>
+            <outline text="Tạo xong → event loop bắt đầu chạy ngay trong nền"/>
+          </outline>
+
+          <outline text="WHAT — asyncio.gather()">
+            <outline text="Chờ NHIỀU coroutine/task hoàn thành cùng lúc"/>
+            <outline text="Trả về kết quả THEO THỨ TỰ INPUT (không phải thứ tự xong)"/>
+            <outline text="⚠️ Java: CompletableFuture.allOf()"/>
+          </outline>
+
+          <outline text="HOW — Pattern chuẩn">
+            <outline text="task_a = asyncio.create_task(fetch('A', 1.0))"/>
+            <outline text="task_b = asyncio.create_task(fetch('B', 0.5))"/>
+            <outline text="a, b = await asyncio.gather(task_a, task_b)"/>
+            <outline text="Tổng thời gian = task CHẬM NHẤT (1.0s), không phải 1.5s"/>
+          </outline>
+
+          <outline text="HOW — return_exceptions">
+            <outline text="=False (default): exception → raise ngay, dừng gather"/>
+            <outline text="=True: exception → trả về như giá trị bình thường"/>
+            <outline text="Dùng =True → for r in results: if isinstance(r, Exception):"/>
+          </outline>
+
+        </outline>
+
+        <outline text="B4 — async with &amp; async for">
+
+          <outline text="async with — Context Manager Bất Đồng Bộ">
+            <outline text="WHAT → như with bình thường nhưng __aenter__/__aexit__ là async"/>
+            <outline text="WHY  → httpx.AsyncClient, DB connection pool cần await để mở/đóng"/>
+            <outline text="HOW  → async with httpx.AsyncClient() as client:"/>
+            <outline text="HOW  → async with aiofiles.open('log.txt', 'a') as f:"/>
+            <outline text="⚠️ Java: try-with-resources (AutoCloseable)"/>
+          </outline>
+
+          <outline text="async for — Async Iterator">
+            <outline text="WHAT → duyệt async generator hoặc async iterable"/>
+            <outline text="WHY  → đọc file lớn từng dòng không load hết vào RAM"/>
+            <outline text="HOW  → async for line in f:  (aiofiles)"/>
+            <outline text="Kết hợp yield → tạo async generator: async def read_lines():"/>
+          </outline>
+
+          <outline text="Thư viện cần biết">
+            <outline text="httpx      → HTTP client async (thay requests) → pip install httpx"/>
+            <outline text="aiofiles   → File I/O async                    → pip install aiofiles"/>
+            <outline text="asyncpg    → PostgreSQL async"/>
+            <outline text="SQLAlchemy → ORM hỗ trợ async (1.4+)"/>
+          </outline>
+
+        </outline>
+
+        <outline text="B5 — Exception Handling Async">
+          <outline text="WHAT → try/except dùng bình thường trong async def"/>
+          <outline text="HOW  → try: result = await risky()  except ValueError as e:"/>
+          <outline text="HOW  → finally: chạy dù có exception hay không (đóng connection)"/>
+          <outline text="asyncio.wait_for(coro, timeout=5.0) → raise asyncio.TimeoutError"/>
+          <outline text="gather return_exceptions=True → gom lỗi, xử lý sau"/>
+        </outline>
+
+        <outline text="B6 — Khi Nào Dùng Async?">
+
+          <outline text="✅ DÙNG ASYNC — I/O-bound">
+            <outline text="HTTP API bên ngoài        → httpx.AsyncClient"/>
+            <outline text="Database query             → asyncpg, SQLAlchemy async"/>
+            <outline text="Đọc/ghi file lớn          → aiofiles"/>
+            <outline text="WebSocket, SSE             → FastAPI built-in"/>
+            <outline text="Nhiều I/O đồng thời        → asyncio.gather"/>
+          </outline>
+
+          <outline text="❌ KHÔNG DÙNG ASYNC — CPU-bound">
+            <outline text="Xử lý ảnh, ML inference   → ProcessPoolExecutor"/>
+            <outline text="Mã hóa nặng, tính toán     → ProcessPoolExecutor"/>
+            <outline text="Thư viện blocking (requests, psycopg2) → run_in_executor"/>
+          </outline>
+
+          <outline text="HOW — Chạy blocking trong async">
+            <outline text="loop = asyncio.get_event_loop()"/>
+            <outline text="ThreadPoolExecutor → I/O blocking (không ảnh hưởng GIL)"/>
+            <outline text="ProcessPoolExecutor → CPU-bound (bypass GIL)"/>
+            <outline text="result = await loop.run_in_executor(pool, blocking_func, args)"/>
+          </outline>
+
+        </outline>
+
+        <outline text="B7 — Production Patterns">
+
+          <outline text="Semaphore — Giới Hạn Concurrent">
+            <outline text="WHAT → chỉ cho phép tối đa N task chạy cùng lúc"/>
+            <outline text="WHY  → tránh spam server, rate limiting, tránh OOM"/>
+            <outline text="HOW  → sem = asyncio.Semaphore(5)"/>
+            <outline text="HOW  → async with sem:  (block nếu đã đủ 5 task)"/>
+            <outline text="⚠️ Java: java.util.concurrent.Semaphore"/>
+          </outline>
+
+          <outline text="Timeout">
+            <outline text="WHAT → hủy coroutine nếu chạy quá lâu"/>
+            <outline text="WHY  → tránh hang vô thời hạn khi server chậm"/>
+            <outline text="HOW  → await asyncio.wait_for(client.get(url), timeout=5.0)"/>
+            <outline text="HOW  → except asyncio.TimeoutError: return None"/>
+          </outline>
+
+          <outline text="Retry + Exponential Backoff">
+            <outline text="WHAT → thử lại khi thất bại, tăng dần thời gian chờ"/>
+            <outline text="WHY  → network tạm lỗi, server quá tải tạm thời"/>
+            <outline text="HOW  → for attempt in range(1, max_retries + 1):"/>
+            <outline text="HOW  → wait = backoff * (2 ** (attempt - 1))  → 1s, 2s, 4s"/>
+            <outline text="HOW  → await asyncio.sleep(wait)"/>
+            <outline text="Retry khi: 5xx, TimeoutError, NetworkError"/>
+            <outline text="KHÔNG retry khi: 4xx (lỗi client — sửa request)"/>
+          </outline>
+
+          <outline text="Pattern fetch_many chuẩn production">
+            <outline text="1. Tạo Semaphore(max_concurrent)"/>
+            <outline text="2. async with semaphore: trong mỗi task"/>
+            <outline text="3. asyncio.wait_for() cho timeout"/>
+            <outline text="4. asyncio.gather(*tasks) để gom kết quả"/>
+            <outline text="5. return_exceptions=True để không bị chặn bởi 1 lỗi"/>
+          </outline>
+
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--       PHẦN C: JAVA vs PYTHON             -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="C — JAVA vs PYTHON — ĐỐI CHIẾU NHANH">
+
+        <outline text="Type System">
+          <outline text="Java   → Static, bắt buộc khai báo, compiler check"/>
+          <outline text="Python → Dynamic, type hints TÙY CHỌN, mypy check"/>
+        </outline>
+        <outline text="Null Safety">
+          <outline text="Java   → Optional&lt;T&gt; wrapper: .get() .orElse() .map()"/>
+          <outline text="Python → T | None — chỉ là hint, KHÔNG có method"/>
+        </outline>
+        <outline text="Generics">
+          <outline text="Java   → List&lt;T&gt;, Map&lt;K,V&gt;"/>
+          <outline text="Python → list[T], dict[K,V] (3.9+) hoặc TypeVar"/>
+        </outline>
+        <outline text="Union Type">
+          <outline text="Java   → không trực tiếp (Object hoặc interface)"/>
+          <outline text="Python → int | str (3.10+) hoặc Union[int, str]"/>
+        </outline>
+        <outline text="Typed Data Structure">
+          <outline text="Java   → POJO / record (Java 16+)"/>
+          <outline text="Python → TypedDict (dict) | NamedTuple (tuple) | dataclass"/>
+        </outline>
+        <outline text="Async Model">
+          <outline text="Java   → Thread-per-request (Servlet) | CompletableFuture | Reactor"/>
+          <outline text="Python → async/await + asyncio event loop (1 thread nhiều task)"/>
+        </outline>
+        <outline text="Chạy Async">
+          <outline text="Java   → .get() .join() (block thread!)"/>
+          <outline text="Python → asyncio.run(coroutine) (không block)"/>
+        </outline>
+        <outline text="Song Song">
+          <outline text="Java   → CompletableFuture.allOf()"/>
+          <outline text="Python → asyncio.gather(*coroutines)"/>
+        </outline>
+        <outline text="Giới Hạn Concurrent">
+          <outline text="Java   → Semaphore / ThreadPoolExecutor"/>
+          <outline text="Python → asyncio.Semaphore (async-aware)"/>
+        </outline>
+        <outline text="CPU-bound">
+          <outline text="Java   → ForkJoinPool / virtual threads (21+)"/>
+          <outline text="Python → ProcessPoolExecutor + run_in_executor"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--       PHẦN D: LỘ TRÌNH 2 NGÀY           -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="D — 🔥 LỘ TRÌNH 2 NGÀY: CORE PYTHON → FASTAPI">
+
+        <outline text="📅 Ngày 1 — Chốt Core Python">
+          <outline text="Sáng — Type Hints thực chiến">
+            <outline text="Annotate đầy đủ hàm có *args, **kwargs, Callable"/>
+            <outline text="Chạy: mypy practice_08.py → sửa lỗi cho đến khi sạch"/>
+            <outline text="Viết TypedDict cho 1 API response mock (PaginatedResponse)"/>
+          </outline>
+          <outline text="Chiều — Async cơ bản">
+            <outline text="asyncio.run() → coroutine → await → asyncio.sleep()"/>
+            <outline text="asyncio.gather() → fetch 5 URL song song, đo thời gian"/>
+            <outline text="So sánh sync vs async: in ra thời gian để thấy khác biệt"/>
+          </outline>
+          <outline text="Tối — Async nâng cao">
+            <outline text="Semaphore(3) → giới hạn 3 request cùng lúc"/>
+            <outline text="asyncio.wait_for(timeout=5.0) → xử lý TimeoutError"/>
+            <outline text="Retry + backoff: 1s, 2s, 4s"/>
+          </outline>
+        </outline>
+
+        <outline text="📅 Ngày 2 — FastAPI">
+          <outline text="Sáng — FastAPI Basics (Type Hints → FastAPI)">
+            <outline text="pip install fastapi uvicorn httpx"/>
+            <outline text="@app.get('/users/{id}') → path param: id: int"/>
+            <outline text="Query param: skip: int = 0, limit: int = 10"/>
+            <outline text="Pydantic BaseModel → request body (= TypedDict nhưng validate!)"/>
+            <outline text="uvicorn main:app --reload → test Swagger UI /docs"/>
+          </outline>
+          <outline text="Chiều — Async FastAPI">
+            <outline text="async def endpoint → khi gọi DB / HTTP bên ngoài"/>
+            <outline text="def endpoint     → khi CPU-bound (FastAPI tự dùng thread pool)"/>
+            <outline text="Depends() → Dependency Injection = @Autowired đơn giản hơn"/>
+            <outline text="HTTPException(status_code=404, detail='Not found')"/>
+            <outline text="Background tasks: @app.post + BackgroundTasks"/>
+          </outline>
+          <outline text="Tối — Mini Project: CRUD API">
+            <outline text="POST /users   → Pydantic model validate input"/>
+            <outline text="GET  /users   → trả list, có pagination"/>
+            <outline text="GET  /users/{id} → 404 nếu không tìm thấy"/>
+            <outline text="Gọi external API async (httpx) từ endpoint"/>
+            <outline text="response_model=UserResponse → FastAPI tự serialize"/>
+          </outline>
+        </outline>
+
+        <outline text="🎯 5 Điểm Cốt Lõi FastAPI Cần Nắm">
+          <outline text="1. Pydantic BaseModel">
+            <outline text="WHAT → class User(BaseModel): name: str; age: int"/>
+            <outline text="WHY  → FastAPI tự validate request body, báo lỗi 422 rõ ràng"/>
+            <outline text="HOW  → @app.post('/') async def create(user: User):"/>
+          </outline>
+          <outline text="2. Path &amp; Query Params">
+            <outline text="Path:  /users/{id}  → def get(id: int)  → FastAPI parse + validate"/>
+            <outline text="Query: /users?skip=0 → def list(skip: int = 0, limit: int = 10)"/>
+          </outline>
+          <outline text="3. async def vs def endpoint">
+            <outline text="async def → gọi DB/HTTP async (await bên trong)"/>
+            <outline text="def       → FastAPI tự chạy trong thread pool (blocking safe)"/>
+            <outline text="⚠️ ĐỪNG dùng requests (blocking) trong async def!"/>
+          </outline>
+          <outline text="4. response_model">
+            <outline text="@app.get('/users', response_model=list[UserResponse])"/>
+            <outline text="FastAPI tự: serialize → validate → exclude fields thừa"/>
+          </outline>
+          <outline text="5. HTTPException">
+            <outline text="raise HTTPException(status_code=404, detail='User not found')"/>
+            <outline text="FastAPI trả JSON: {'detail': 'User not found'}"/>
+          </outline>
+        </outline>
+
+      </outline>
+
+    </outline>
+  </body>
+</opml>

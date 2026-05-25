@@ -1,0 +1,708 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>Khối 9 — Làm Quen FastAPI &amp; Routing | 5W1H | Java Dev</title>
+  </head>
+  <body>
+    <outline text="🟩 Khối 9 — FastAPI Cơ Bản &amp; Routing">
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      A — FASTAPI LÀ GÌ?                 -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="A — FastAPI Là Gì? Tại Sao Dùng?">
+
+        <outline text="WHAT — FastAPI là gì?">
+          <outline text="Web framework Python để xây REST API — tương tự Spring Boot (Java)"/>
+          <outline text="Xây trên Starlette (ASGI) + Pydantic (validation)"/>
+          <outline text="ASGI = Asynchronous Server Gateway Interface → hỗ trợ async native"/>
+          <outline text="Phiên bản: FastAPI 0.136+ | Python 3.12+"/>
+        </outline>
+
+        <outline text="WHY — Tại sao chọn FastAPI?">
+          <outline text="Tự động sinh Swagger UI /docs + ReDoc /redoc từ code"/>
+          <outline text="Validation request/response tự động qua Pydantic — không viết thêm"/>
+          <outline text="Native async/await — xử lý concurrent I/O hiệu quả"/>
+          <outline text="Hiệu năng ngang Node.js/Go — cao hơn Flask ~3x, Django ~5x"/>
+          <outline text="Type hints = documentation = validation = editor autocomplete cùng lúc"/>
+        </outline>
+
+        <outline text="WHERE — FastAPI dùng ở đâu?">
+          <outline text="REST API backend cho web/mobile app"/>
+          <outline text="Microservice giao tiếp HTTP/JSON"/>
+          <outline text="AI/ML serving API (OpenAI, Anthropic wrapper)"/>
+          <outline text="Internal service trong hệ thống Digi Dinos"/>
+        </outline>
+
+        <outline text="HOW — So sánh Flask / Django / FastAPI">
+          <outline text="Flask   → micro framework, không có gì built-in, validation tự làm"/>
+          <outline text="Django  → full-stack (ORM + template + admin), nặng hơn, sync-first"/>
+          <outline text="FastAPI → API-focused, async-first, validation + docs tự động"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Spring Boot  ↔  FastAPI"/>
+          <outline text="@RestController  ↔  @app (FastAPI instance)"/>
+          <outline text="@GetMapping('/users')  ↔  @app.get('/users')"/>
+          <outline text="@RequestBody UserDTO  ↔  user: UserCreate (Pydantic)"/>
+          <outline text="@PathVariable Long id  ↔  id: int (path param)"/>
+          <outline text="@RequestParam int page  ↔  page: int = 0 (query param)"/>
+          <outline text="Springfox/SpringDoc OpenAPI  ↔  Tự động, không cần config"/>
+          <outline text="Tomcat (WSGI-like)  ↔  Uvicorn (ASGI)"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      B — CÀI ĐẶT &amp; HELLO WORLD      -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="B — Cài Đặt &amp; Hello World">
+
+        <outline text="HOW — Cài đặt (dùng uv — khuyến khích)">
+          <outline text="uv init my-api &amp;&amp; cd my-api"/>
+          <outline text="uv add fastapi uvicorn[standard] pydantic-settings"/>
+          <outline text="uv add --dev httpx pytest ruff mypy"/>
+          <outline text="— hoặc pip —"/>
+          <outline text="pip install fastapi uvicorn[standard]"/>
+          <outline text="uvicorn[standard] → cài thêm: websockets, httptools, python-dotenv"/>
+        </outline>
+
+        <outline text="HOW — Cấu trúc file Hello World">
+          <outline text="# main.py"/>
+          <outline text="from fastapi import FastAPI"/>
+          <outline text=""/>
+          <outline text="app = FastAPI(title='My API', version='1.0.0')"/>
+          <outline text=""/>
+          <outline text="@app.get('/')"/>
+          <outline text="async def root():"/>
+          <outline text="    return {'message': 'Hello World'}"/>
+        </outline>
+
+        <outline text="HOW — Chạy server">
+          <outline text="uvicorn main:app --reload"/>
+          <outline text="→ main      = tên file main.py"/>
+          <outline text="→ app       = tên biến FastAPI()"/>
+          <outline text="→ --reload  = auto restart khi sửa code (dev only)"/>
+          <outline text="→ mặc định chạy http://localhost:8000"/>
+          <outline text="uv run uvicorn main:app --reload  (nếu dùng uv)"/>
+        </outline>
+
+        <outline text="HOW — Kiểm tra nhanh">
+          <outline text="http://localhost:8000          → API endpoint"/>
+          <outline text="http://localhost:8000/docs     → Swagger UI (tự động!)"/>
+          <outline text="http://localhost:8000/redoc    → ReDoc (tự động!)"/>
+          <outline text="http://localhost:8000/openapi.json → JSON schema (tự động!)"/>
+        </outline>
+
+        <outline text="WHAT — FastAPI() constructor options">
+          <outline text="app = FastAPI("/>
+          <outline text="    title='Product API',"/>
+          <outline text="    description='API quản lý sản phẩm',"/>
+          <outline text="    version='1.0.0',"/>
+          <outline text="    docs_url='/docs',       → đổi URL Swagger"/>
+          <outline text="    redoc_url='/redoc',"/>
+          <outline text="    openapi_url='/openapi.json',"/>
+          <outline text=")"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Spring Boot: @SpringBootApplication + mvn spring-boot:run"/>
+          <outline text="FastAPI:     app = FastAPI() + uvicorn main:app --reload"/>
+          <outline text="Spring: Swagger cần thêm springdoc-openapi dependency"/>
+          <outline text="FastAPI: /docs /redoc /openapi.json có SẴN, không cần config"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      C — SWAGGER UI &amp; REDOC          -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="C — Swagger UI (/docs) &amp; ReDoc (/redoc)">
+
+        <outline text="WHAT — FastAPI tự sinh docs từ đâu?">
+          <outline text="Đọc type hints của tham số → sinh schema"/>
+          <outline text="Đọc Pydantic model → sinh request/response schema"/>
+          <outline text="Đọc docstring của function → sinh description"/>
+          <outline text="Đọc decorator @app.get/post → sinh method + path"/>
+        </outline>
+
+        <outline text="HOW — Thêm metadata cho endpoint">
+          <outline text="@app.get("/>
+          <outline text="    '/users/{id}',"/>
+          <outline text="    summary='Lấy thông tin user',"/>
+          <outline text="    description='Trả về chi tiết user theo ID. 404 nếu không tìm thấy.',"/>
+          <outline text="    response_description='User object',"/>
+          <outline text="    tags=['Users'],                → nhóm trong Swagger UI"/>
+          <outline text="    deprecated=False,"/>
+          <outline text=")"/>
+          <outline text="async def get_user(id: int):"/>
+          <outline text="    '''"/>
+          <outline text="    Docstring cũng hiển thị trong /docs"/>
+          <outline text="    '''"/>
+        </outline>
+
+        <outline text="HOW — Tags để nhóm endpoint">
+          <outline text="@app.get('/users', tags=['Users'])"/>
+          <outline text="@app.post('/users', tags=['Users'])"/>
+          <outline text="@app.get('/products', tags=['Products'])"/>
+          <outline text="→ Swagger UI nhóm theo tag → dễ navigate"/>
+          <outline text="Khai báo tag với metadata:"/>
+          <outline text="app = FastAPI(openapi_tags=["/>
+          <outline text="    {'name': 'Users', 'description': 'Quản lý người dùng'},"/>
+          <outline text="    {'name': 'Products', 'description': 'Quản lý sản phẩm'},"/>
+          <outline text="])"/>
+        </outline>
+
+        <outline text="HOW — Test API trực tiếp trên Swagger UI">
+          <outline text="1. Vào http://localhost:8000/docs"/>
+          <outline text="2. Click endpoint muốn test → 'Try it out'"/>
+          <outline text="3. Điền params/body → Execute"/>
+          <outline text="4. Xem Response body, Status code, Headers"/>
+          <outline text="→ Thay thế Postman cho dev nhanh"/>
+        </outline>
+
+        <outline text="⚠️ PRODUCTION — Tắt docs khi deploy">
+          <outline text="app = FastAPI(docs_url=None, redoc_url=None)  → tắt hoàn toàn"/>
+          <outline text="Hoặc kiểm tra ENV:"/>
+          <outline text="docs_url = '/docs' if settings.debug else None"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      D — PATH OPERATIONS                 -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="D — Path Operations — @app.get/post/put/delete">
+
+        <outline text="WHAT — Path Operation là gì?">
+          <outline text="Decorator kết hợp HTTP method + URL path → định nghĩa 1 endpoint"/>
+          <outline text="@app.get('/users')      → GET    /users"/>
+          <outline text="@app.post('/users')     → POST   /users"/>
+          <outline text="@app.put('/users/{id}') → PUT    /users/123"/>
+          <outline text="@app.delete('/users/{id}') → DELETE /users/123"/>
+          <outline text="@app.patch('/users/{id}')  → PATCH  /users/123"/>
+        </outline>
+
+        <outline text="HOW — async def vs def">
+          <outline text="async def → dùng khi endpoint gọi DB/HTTP (await bên trong)"/>
+          <outline text="def       → FastAPI tự chạy trong thread pool (blocking safe)"/>
+          <outline text="⚠️ ĐỪNG dùng requests (sync) trong async def → block event loop"/>
+          <outline text="✅ async def + httpx.AsyncClient → đúng cách"/>
+          <outline text="✅ def + requests → cũng OK (FastAPI lo thread pool)"/>
+        </outline>
+
+        <outline text="HOW — Return value → tự động JSON">
+          <outline text="return {'key': 'value'}   → JSON response tự động"/>
+          <outline text="return [1, 2, 3]           → JSON array"/>
+          <outline text="return 'hello'             → JSON string"/>
+          <outline text="return user_obj            → FastAPI dùng response_model serialize"/>
+          <outline text="FastAPI tự set Content-Type: application/json"/>
+        </outline>
+
+        <outline text="HOW — HTTP methods theo convention REST">
+          <outline text="GET    /users        → list tất cả"/>
+          <outline text="GET    /users/{id}   → lấy 1 item"/>
+          <outline text="POST   /users        → tạo mới (body = data)"/>
+          <outline text="PUT    /users/{id}   → update toàn bộ (replace)"/>
+          <outline text="PATCH  /users/{id}   → update một phần (partial)"/>
+          <outline text="DELETE /users/{id}   → xóa"/>
+          <outline text="⚠️ Java: @GetMapping @PostMapping @PutMapping @DeleteMapping"/>
+          <outline text="Python: @app.get @app.post @app.put @app.delete"/>
+        </outline>
+
+        <outline text="HOW — Thứ tự route quan trọng">
+          <outline text="@app.get('/users/me')    → phải khai báo TRƯỚC /users/{id}"/>
+          <outline text="@app.get('/users/{id}')  → nếu đặt trước, 'me' bị match là {id}"/>
+          <outline text="⚠️ FastAPI match route theo thứ tự khai báo từ trên xuống"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="@GetMapping('/users')  ↔  @app.get('/users')"/>
+          <outline text="@PostMapping('/users') ↔  @app.post('/users')"/>
+          <outline text="@RestController        ↔  không cần (mọi endpoint đều là REST)"/>
+          <outline text="@RequestMapping('/api/v1') ↔  APIRouter(prefix='/api/v1')"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      E — PATH PARAMETERS                 -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="E — Path Parameters — Tham Số Trong URL">
+
+        <outline text="WHAT — Path param là gì?">
+          <outline text="Tham số nằm trong URL path, bao bởi {}"/>
+          <outline text="GET /users/42  → id=42 là path param"/>
+          <outline text="Bắt buộc — URL không có tham số = 404"/>
+        </outline>
+
+        <outline text="HOW — Khai báo cơ bản">
+          <outline text="@app.get('/users/{user_id}')"/>
+          <outline text="async def get_user(user_id: int):"/>
+          <outline text="    return {'id': user_id}"/>
+          <outline text="→ FastAPI tự parse '42' → int, validate"/>
+          <outline text="→ Truyền 'abc' thay int → 422 Unprocessable Entity tự động"/>
+        </outline>
+
+        <outline text="HOW — Nhiều path params">
+          <outline text="@app.get('/shops/{shop_id}/products/{product_id}')"/>
+          <outline text="async def get_product(shop_id: int, product_id: int):"/>
+          <outline text="    return {'shop': shop_id, 'product': product_id}"/>
+        </outline>
+
+        <outline text="HOW — Validate path param bằng Path()">
+          <outline text="from fastapi import Path"/>
+          <outline text=""/>
+          <outline text="@app.get('/users/{user_id}')"/>
+          <outline text="async def get_user("/>
+          <outline text="    user_id: int = Path(gt=0, description='ID của user, phải &gt; 0')"/>
+          <outline text="):"/>
+          <outline text="    return {'id': user_id}"/>
+          <outline text="→ user_id=0 hoặc âm → 422 tự động"/>
+          <outline text="→ description xuất hiện trong /docs"/>
+        </outline>
+
+        <outline text="HOW — Path param kiểu str, Enum">
+          <outline text="# Str param"/>
+          <outline text="@app.get('/files/{file_path:path}')  → nhận cả /a/b/c.txt"/>
+          <outline text="async def get_file(file_path: str): ..."/>
+          <outline text=""/>
+          <outline text="# Enum param — giới hạn giá trị hợp lệ"/>
+          <outline text="from enum import Enum"/>
+          <outline text="class ModelName(str, Enum):"/>
+          <outline text="    alexnet = 'alexnet'"/>
+          <outline text="    resnet = 'resnet'"/>
+          <outline text=""/>
+          <outline text="@app.get('/models/{model_name}')"/>
+          <outline text="async def get_model(model_name: ModelName):"/>
+          <outline text="    return {'model': model_name}"/>
+          <outline text="→ Swagger UI hiển thị dropdown, giá trị khác → 422"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="@GetMapping('/users/{id}') + @PathVariable Long id"/>
+          <outline text="FastAPI: @app.get('/users/{id}') + id: int  → gọn hơn nhiều"/>
+          <outline text="Java: validation cần @PathVariable + @Validated + @Min(1)"/>
+          <outline text="FastAPI: Path(gt=0) → xong"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      F — QUERY PARAMETERS                -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="F — Query Parameters — Tham Số Trên URL ?key=value">
+
+        <outline text="WHAT — Query param là gì?">
+          <outline text="Tham số sau dấu ? trong URL"/>
+          <outline text="GET /users?skip=0&amp;limit=10&amp;search=alice"/>
+          <outline text="Không nằm trong path → khai báo là function param bình thường"/>
+          <outline text="FastAPI: param không có trong path → tự coi là query param"/>
+        </outline>
+
+        <outline text="HOW — Khai báo cơ bản">
+          <outline text="@app.get('/users')"/>
+          <outline text="async def list_users(skip: int = 0, limit: int = 10):"/>
+          <outline text="    return {'skip': skip, 'limit': limit}"/>
+          <outline text="→ GET /users          → skip=0, limit=10 (default)"/>
+          <outline text="→ GET /users?skip=5   → skip=5, limit=10"/>
+          <outline text="→ GET /users?limit=abc → 422 (không phải int)"/>
+        </outline>
+
+        <outline text="HOW — Required query param (không có default)">
+          <outline text="@app.get('/search')"/>
+          <outline text="async def search(q: str):   → bắt buộc, không có default"/>
+          <outline text="    return {'query': q}"/>
+          <outline text="→ GET /search          → 422 thiếu q"/>
+          <outline text="→ GET /search?q=alice  → OK"/>
+        </outline>
+
+        <outline text="HOW — Optional query param">
+          <outline text="async def search(q: str | None = None):"/>
+          <outline text="    if q is None:"/>
+          <outline text="        return {'results': 'tất cả'}"/>
+          <outline text="    return {'results': f'tìm: {q}'}"/>
+        </outline>
+
+        <outline text="HOW — Validate query param bằng Query()">
+          <outline text="from fastapi import Query"/>
+          <outline text=""/>
+          <outline text="async def list_users("/>
+          <outline text="    skip:   int = Query(default=0,  ge=0),"/>
+          <outline text="    limit:  int = Query(default=10, ge=1, le=100),"/>
+          <outline text="    search: str = Query(default=None, min_length=1, max_length=50),"/>
+          <outline text="):"/>
+          <outline text="→ limit=200 → 422 (vượt le=100)"/>
+          <outline text="→ search='' → 422 (vi phạm min_length=1)"/>
+        </outline>
+
+        <outline text="HOW — Query param là list">
+          <outline text="GET /items?tag=python&amp;tag=fastapi&amp;tag=async"/>
+          <outline text="async def get_items(tag: list[str] = Query(default=[])):"/>
+          <outline text="    return {'tags': tag}   → ['python', 'fastapi', 'async']"/>
+        </outline>
+
+        <outline text="HOW — Query param với alias (tên khác trên URL)">
+          <outline text="async def get_items(item_query: str = Query(alias='item-query')):"/>
+          <outline text="→ URL: GET /items?item-query=foo  (dấu - không dùng được trong Python)"/>
+          <outline text="→ Python: item_query = 'foo'"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="@RequestParam(defaultValue='0') int skip"/>
+          <outline text="FastAPI: skip: int = 0  → gọn hơn nhiều"/>
+          <outline text="@RequestParam(required=false) String q"/>
+          <outline text="FastAPI: q: str | None = None"/>
+          <outline text="Java validation: @RequestParam + @Min + @Max + @Validated"/>
+          <outline text="FastAPI: Query(ge=0, le=100) → trong chính khai báo param"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      G — REQUEST BODY                    -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="G — Request Body — Nhận JSON Data">
+
+        <outline text="WHAT — Request body là gì?">
+          <outline text="Dữ liệu JSON gửi trong body của POST/PUT/PATCH request"/>
+          <outline text="FastAPI đọc body → parse JSON → validate qua Pydantic model"/>
+          <outline text="Content-Type: application/json (FastAPI yêu cầu mặc định)"/>
+        </outline>
+
+        <outline text="HOW — Khai báo cơ bản">
+          <outline text="from pydantic import BaseModel"/>
+          <outline text=""/>
+          <outline text="class UserCreate(BaseModel):"/>
+          <outline text="    name: str"/>
+          <outline text="    email: str"/>
+          <outline text="    age: int | None = None"/>
+          <outline text=""/>
+          <outline text="@app.post('/users')"/>
+          <outline text="async def create_user(user: UserCreate):"/>
+          <outline text="    # user đã được validate — dùng ngay"/>
+          <outline text="    return {'id': 1, **user.model_dump()}"/>
+          <outline text="→ Body sai schema → 422 tự động với message rõ ràng"/>
+        </outline>
+
+        <outline text="HOW — Truy cập dữ liệu trong body">
+          <outline text="user.name          → trực tiếp attribute"/>
+          <outline text="user.model_dump()  → convert sang dict"/>
+          <outline text="**user.model_dump() → unpack vào dict khác"/>
+        </outline>
+
+        <outline text="HOW — Nhiều body params (dùng Body())">
+          <outline text="from fastapi import Body"/>
+          <outline text=""/>
+          <outline text="@app.put('/users/{id}')"/>
+          <outline text="async def update("/>
+          <outline text="    id: int,"/>
+          <outline text="    user: UserUpdate,"/>
+          <outline text="    importance: int = Body(gt=0),  → extra body field"/>
+          <outline text="):"/>
+          <outline text="→ JSON body cần: {'user': {...}, 'importance': 5}"/>
+        </outline>
+
+        <outline text="HOW — PATCH — Update một phần (partial update)">
+          <outline text="class UserUpdate(BaseModel):"/>
+          <outline text="    name: str | None = None     → tất cả optional"/>
+          <outline text="    email: str | None = None"/>
+          <outline text="    age: int | None = None"/>
+          <outline text=""/>
+          <outline text="@app.patch('/users/{id}')"/>
+          <outline text="async def partial_update(id: int, user: UserUpdate):"/>
+          <outline text="    update_data = user.model_dump(exclude_unset=True)  → chỉ field đã set"/>
+          <outline text="    # update_data chỉ chứa các field client gửi lên"/>
+          <outline text="    return update_data"/>
+          <outline text="⚠️ exclude_unset=True → không ghi đè field client không gửi"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="@RequestBody @Valid UserCreateDTO dto"/>
+          <outline text="FastAPI: user: UserCreate  → @RequestBody + @Valid tự động"/>
+          <outline text="Java: BindingResult để bắt lỗi validation"/>
+          <outline text="FastAPI: lỗi validation → 422 JSON tự động, không cần handle"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      H — KẾT HỢP PATH + QUERY + BODY    -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="H — Kết Hợp Path + Query + Body">
+
+        <outline text="WHAT — FastAPI phân biệt 3 loại param như thế nào?">
+          <outline text="Nằm trong path {}: → Path param"/>
+          <outline text="Kiểu là Pydantic BaseModel: → Request body"/>
+          <outline text="Còn lại (int, str, bool...): → Query param"/>
+          <outline text="→ FastAPI tự nhận biết — không cần annotation thêm"/>
+        </outline>
+
+        <outline text="HOW — Ví dụ kết hợp đầy đủ">
+          <outline text="class ItemUpdate(BaseModel):"/>
+          <outline text="    name: str"/>
+          <outline text="    price: float"/>
+          <outline text=""/>
+          <outline text="@app.put('/shops/{shop_id}/items/{item_id}')"/>
+          <outline text="async def update_item("/>
+          <outline text="    shop_id:  int,           → path param (trong URL)"/>
+          <outline text="    item_id:  int,           → path param (trong URL)"/>
+          <outline text="    item:     ItemUpdate,    → request body (Pydantic model)"/>
+          <outline text="    notify:   bool = False,  → query param (?notify=true)"/>
+          <outline text="    comment:  str | None = None,  → query param (?comment=...)"/>
+          <outline text="):"/>
+          <outline text="    return {"/>
+          <outline text="        'shop': shop_id, 'item': item_id,"/>
+          <outline text="        'data': item.model_dump(),"/>
+          <outline text="        'notify': notify, 'comment': comment,"/>
+          <outline text="    }"/>
+          <outline text="→ PUT /shops/1/items/42?notify=true&amp;comment=urgent"/>
+          <outline text="→ Body: {'name': 'Laptop', 'price': 25000000}"/>
+        </outline>
+
+        <outline text="HOW — Quy tắc nhớ nhanh">
+          <outline text="Trong {} path → Path param  (bắt buộc)"/>
+          <outline text="BaseModel     → Body         (từ JSON body)"/>
+          <outline text="Có default    → Query param  (tùy chọn)"/>
+          <outline text="Không default → Query param  (bắt buộc)"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      I — RESPONSE MODEL                  -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="I — Response Model — Kiểm Soát Dữ Liệu Trả Về">
+
+        <outline text="WHAT — response_model là gì?">
+          <outline text="Pydantic model khai báo schema của response"/>
+          <outline text="FastAPI tự: serialize → filter field thừa → validate output"/>
+          <outline text="Quan trọng: loại bỏ field nhạy cảm (password, token) khỏi response"/>
+        </outline>
+
+        <outline text="HOW — Khai báo response_model">
+          <outline text="class UserCreate(BaseModel):"/>
+          <outline text="    name: str"/>
+          <outline text="    email: str"/>
+          <outline text="    password: str           → có password (input)"/>
+          <outline text=""/>
+          <outline text="class UserResponse(BaseModel):"/>
+          <outline text="    id: int"/>
+          <outline text="    name: str"/>
+          <outline text="    email: str"/>
+          <outline text="    # KHÔNG có password  → FastAPI tự loại bỏ khi trả về"/>
+          <outline text=""/>
+          <outline text="@app.post('/users', response_model=UserResponse, status_code=201)"/>
+          <outline text="async def create_user(user: UserCreate):"/>
+          <outline text="    # Giả lập lưu DB + trả về object có id"/>
+          <outline text="    return {'id': 1, 'name': user.name, 'email': user.email, 'password': user.password}"/>
+          <outline text="    # FastAPI tự filter → response chỉ có id, name, email"/>
+        </outline>
+
+        <outline text="HOW — response_model cho list">
+          <outline text="@app.get('/users', response_model=list[UserResponse])"/>
+          <outline text="async def list_users():"/>
+          <outline text="    return [{'id': 1, 'name': 'Alice', ...}, ...]"/>
+        </outline>
+
+        <outline text="HOW — response_model_exclude_unset">
+          <outline text="@app.get('/users/{id}', response_model=UserResponse,"/>
+          <outline text="         response_model_exclude_unset=True)"/>
+          <outline text="→ Bỏ các field có default nhưng chưa set → response gọn hơn"/>
+        </outline>
+
+        <outline text="HOW — Tắt response_model khi không cần filter">
+          <outline text="@app.get('/raw', response_model=None)  → trả về nguyên không filter"/>
+          <outline text="Hoặc không khai báo response_model → FastAPI không validate output"/>
+        </outline>
+
+        <outline text="HOW — Pattern kế thừa Pydantic cho schemas">
+          <outline text="class UserBase(BaseModel):       → name, email chung"/>
+          <outline text="class UserCreate(UserBase):      → + password"/>
+          <outline text="class UserUpdate(BaseModel):     → tất cả Optional (PATCH)"/>
+          <outline text="class UserInDB(UserBase):        → + id, hashed_password"/>
+          <outline text="class UserResponse(UserBase):    → + id, model_config from_attributes"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Java: @JsonIgnore trên password field DTO"/>
+          <outline text="FastAPI: dùng model khác (UserResponse không có password)"/>
+          <outline text="Java: @JsonView để control field theo context"/>
+          <outline text="FastAPI: response_model=... khác nhau cho mỗi endpoint"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      J — HTTP STATUS CODES               -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="J — HTTP Status Codes — Trả Mã Lỗi Chuẩn">
+
+        <outline text="WHAT — Các mã quan trọng cần nhớ">
+          <outline text="200 OK            → GET thành công (mặc định FastAPI)"/>
+          <outline text="201 Created       → POST tạo mới thành công"/>
+          <outline text="204 No Content    → DELETE thành công, không có body"/>
+          <outline text="400 Bad Request   → Client gửi data sai logic nghiệp vụ"/>
+          <outline text="401 Unauthorized  → Chưa xác thực (thiếu/sai token)"/>
+          <outline text="403 Forbidden     → Đã xác thực nhưng không có quyền"/>
+          <outline text="404 Not Found     → Resource không tồn tại"/>
+          <outline text="409 Conflict      → Trùng data (email đã tồn tại)"/>
+          <outline text="422 Unprocessable → Pydantic validation fail (FastAPI tự trả)"/>
+          <outline text="500 Internal Error → Lỗi server không mong đợi"/>
+        </outline>
+
+        <outline text="HOW — Đặt status code mặc định">
+          <outline text="@app.post('/users', status_code=201)   → POST trả 201"/>
+          <outline text="@app.delete('/users/{id}', status_code=204)  → DELETE trả 204"/>
+          <outline text="from fastapi import status  → dùng constant thay số magic"/>
+          <outline text="@app.post('/users', status_code=status.HTTP_201_CREATED)"/>
+        </outline>
+
+        <outline text="HOW — HTTPException — Ném lỗi có cấu trúc">
+          <outline text="from fastapi import HTTPException"/>
+          <outline text=""/>
+          <outline text="@app.get('/users/{id}')"/>
+          <outline text="async def get_user(id: int):"/>
+          <outline text="    user = db.get(id)"/>
+          <outline text="    if user is None:"/>
+          <outline text="        raise HTTPException("/>
+          <outline text="            status_code=404,"/>
+          <outline text="            detail='User không tồn tại'"/>
+          <outline text="        )"/>
+          <outline text="    return user"/>
+          <outline text="→ Response: 404 + {'detail': 'User không tồn tại'}"/>
+        </outline>
+
+        <outline text="HOW — HTTPException với headers (dùng cho 401)">
+          <outline text="raise HTTPException("/>
+          <outline text="    status_code=401,"/>
+          <outline text="    detail='Token không hợp lệ',"/>
+          <outline text="    headers={'WWW-Authenticate': 'Bearer'},"/>
+          <outline text=")"/>
+        </outline>
+
+        <outline text="HOW — detail có thể là bất kỳ JSON-serializable value">
+          <outline text="raise HTTPException(status_code=400, detail='Lỗi đơn giản')"/>
+          <outline text="raise HTTPException(status_code=400, detail={'code': 'EMAIL_TAKEN', 'field': 'email'})"/>
+          <outline text="raise HTTPException(status_code=400, detail=['lỗi 1', 'lỗi 2'])"/>
+        </outline>
+
+        <outline text="HOW — Custom Exception Handler (global)">
+          <outline text="from fastapi import Request"/>
+          <outline text="from fastapi.responses import JSONResponse"/>
+          <outline text=""/>
+          <outline text="class BusinessError(Exception):"/>
+          <outline text="    def __init__(self, code: str, message: str):"/>
+          <outline text="        self.code = code"/>
+          <outline text="        self.message = message"/>
+          <outline text=""/>
+          <outline text="@app.exception_handler(BusinessError)"/>
+          <outline text="async def business_error_handler(request: Request, exc: BusinessError):"/>
+          <outline text="    return JSONResponse("/>
+          <outline text="        status_code=400,"/>
+          <outline text="        content={'code': exc.code, 'message': exc.message}"/>
+          <outline text="    )"/>
+          <outline text="→ raise BusinessError('EMAIL_TAKEN', 'Email đã tồn tại') từ bất kỳ endpoint"/>
+        </outline>
+
+        <outline text="⚠️ JAVA SO SÁNH">
+          <outline text="Java: @ResponseStatus(HttpStatus.NOT_FOUND)"/>
+          <outline text="FastAPI: status_code=404 trong decorator"/>
+          <outline text="Java: throw new ResponseStatusException(HttpStatus.NOT_FOUND, 'msg')"/>
+          <outline text="FastAPI: raise HTTPException(status_code=404, detail='msg')"/>
+          <outline text="Java: @ControllerAdvice + @ExceptionHandler"/>
+          <outline text="FastAPI: @app.exception_handler(ExceptionClass)"/>
+        </outline>
+
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      K — TỔNG HỢP JAVA vs PYTHON         -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="K — JAVA vs PYTHON — ĐỐI CHIẾU NHANH KHỐI 9">
+        <outline text="Khởi tạo app">
+          <outline text="Java   → @SpringBootApplication class + main()"/>
+          <outline text="Python → app = FastAPI() + uvicorn main:app"/>
+        </outline>
+        <outline text="Định nghĩa endpoint">
+          <outline text="Java   → @GetMapping('/users') trong @RestController class"/>
+          <outline text="Python → @app.get('/users') trên function"/>
+        </outline>
+        <outline text="Path param">
+          <outline text="Java   → @PathVariable Long id"/>
+          <outline text="Python → id: int (trong function param, tên trùng với {id})"/>
+        </outline>
+        <outline text="Query param">
+          <outline text="Java   → @RequestParam(defaultValue='0') int skip"/>
+          <outline text="Python → skip: int = 0"/>
+        </outline>
+        <outline text="Request body">
+          <outline text="Java   → @RequestBody @Valid UserDTO dto"/>
+          <outline text="Python → user: UserCreate (Pydantic tự validate)"/>
+        </outline>
+        <outline text="Response schema">
+          <outline text="Java   → @JsonIgnore, @JsonView, ModelMapper"/>
+          <outline text="Python → response_model=UserResponse (tự filter)"/>
+        </outline>
+        <outline text="Ném lỗi">
+          <outline text="Java   → throw new ResponseStatusException(HttpStatus.NOT_FOUND)"/>
+          <outline text="Python → raise HTTPException(status_code=404, detail='...')"/>
+        </outline>
+        <outline text="Global exception">
+          <outline text="Java   → @ControllerAdvice + @ExceptionHandler"/>
+          <outline text="Python → @app.exception_handler(ExceptionClass)"/>
+        </outline>
+        <outline text="API Documentation">
+          <outline text="Java   → Springfox / Springdoc dependency + config"/>
+          <outline text="Python → /docs /redoc /openapi.json tự động, không config"/>
+        </outline>
+        <outline text="Validation fail">
+          <outline text="Java   → MethodArgumentNotValidException → 400"/>
+          <outline text="Python → ValidationError → 422 tự động (FastAPI lo)"/>
+        </outline>
+      </outline>
+
+      <!-- ████████████████████████████████████████ -->
+      <!--      L — CHECKLIST THỰC HÀNH             -->
+      <!-- ████████████████████████████████████████ -->
+      <outline text="L — 🔥 Checklist Thực Hành Khối 9">
+
+        <outline text="Bài 1 — Hello World + Swagger">
+          <outline text="uv init fastapi-demo &amp;&amp; uv add fastapi uvicorn[standard]"/>
+          <outline text="Tạo main.py: app = FastAPI(title='Demo API', version='1.0')"/>
+          <outline text="Thêm 1 endpoint GET / trả {'message': 'Hello', 'version': '1.0'}"/>
+          <outline text="Chạy uvicorn, mở /docs → test Try it out"/>
+        </outline>
+
+        <outline text="Bài 2 — Path + Query params có validation">
+          <outline text="GET /products/{product_id}  → Path(gt=0), trả 404 nếu id &gt; 100"/>
+          <outline text="GET /products  → Query: skip(ge=0), limit(ge=1,le=50), search(Optional)"/>
+          <outline text="Test: /products?limit=200 → 422 | /products/0 → 422"/>
+        </outline>
+
+        <outline text="Bài 3 — POST với Request Body + Response Model">
+          <outline text="Tạo ProductCreate (name, price, stock) và ProductResponse (+ id, created_at)"/>
+          <outline text="POST /products → nhận ProductCreate → trả ProductResponse (status 201)"/>
+          <outline text="PATCH /products/{id} → nhận ProductUpdate (all Optional) → exclude_unset=True"/>
+        </outline>
+
+        <outline text="Bài 4 — HTTPException + Custom Exception">
+          <outline text="GET /products/{id} → raise 404 nếu không tìm thấy"/>
+          <outline text="POST /products → raise 409 nếu name đã tồn tại"/>
+          <outline text="Tạo DuplicateError, đăng ký @app.exception_handler → trả JSON chuẩn"/>
+        </outline>
+
+        <outline text="Bài 5 — Mini CRUD API hoàn chỉnh">
+          <outline text="In-memory store: products: dict[int, Product] = {}"/>
+          <outline text="GET    /products            → list, hỗ trợ skip/limit"/>
+          <outline text="GET    /products/{id}       → 404 nếu không có"/>
+          <outline text="POST   /products            → tạo mới, 201"/>
+          <outline text="PATCH  /products/{id}       → update partial"/>
+          <outline text="DELETE /products/{id}       → 204, không trả body"/>
+          <outline text="Test toàn bộ qua /docs Swagger UI"/>
+        </outline>
+
+      </outline>
+
+    </outline>
+  </body>
+</opml>
