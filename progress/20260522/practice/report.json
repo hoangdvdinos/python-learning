@@ -1,0 +1,12 @@
+{
+  "Engineering": {
+    "count": 3,
+    "average_salary": 37666666.666666664,
+    "total_salary": 113000000
+  },
+  "Marketing": {
+    "count": 2,
+    "average_salary": 30000000.0,
+    "total_salary": 60000000
+  }
+}
