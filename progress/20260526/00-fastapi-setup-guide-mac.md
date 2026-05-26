@@ -6,6 +6,29 @@
 
 ---
 
+## ⚡ Đã Có Project Rồi — Chạy Ngay
+
+> Dùng khi clone project về máy, hoặc mở lại project cũ chưa có `.venv`.
+
+```zsh
+cd /path/to/my-api        # 1. vào đúng thư mục project
+
+uv sync                   # 2. tạo .venv + cài đúng packages theo uv.lock
+                          #    (tương đương mvn install — chạy 1 lần sau khi clone)
+
+uv run uvicorn main:app --reload   # 3. chạy server
+```
+
+| Sau bước | Kết quả |
+|----------|---------|
+| `uv sync` | Thư mục `.venv/` được tạo, mọi package đã cài đúng version |
+| `uv run uvicorn ...` | Server chạy tại `http://localhost:8000` |
+| Mở `/docs` | Swagger UI sẵn sàng, không cần config thêm |
+
+> **Từ lần sau** khi `.venv` đã có rồi → chỉ cần bước 3 là đủ.
+
+---
+
 ## Tổng Quan — Stack So Sánh
 
 ```
