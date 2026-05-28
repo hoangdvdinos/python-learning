@@ -3,4 +3,5 @@
     - decorator
     - yeld
     - generator
-- Review laij type-hints-async
+- Review lại type-hints-async
+- Review lại pydantic
