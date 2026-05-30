@@ -3,5 +3,7 @@
     - decorator
     - yeld
     - generator
+    - async-await
 - Review lại type-hints-async
 - Review lại pydantic
+- SQLAlchemy ORM models (Khối 11)
