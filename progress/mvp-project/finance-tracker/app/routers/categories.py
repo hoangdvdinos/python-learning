@@ -1,6 +1,6 @@
-from typing import Annotated
+from typing import Annotated, Literal, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -18,8 +18,11 @@ CategoryRepoDep = Annotated[CategoryRepository, Depends(get_category_repo)]
 
 
 @router.get("/", response_model=list[CategoryResponse])
-async def list_categories(repo: CategoryRepoDep) -> list[CategoryResponse]:
-    return await repo.get_all()
+async def list_categories(
+    repo: CategoryRepoDep,
+    type: Optional[Literal["income", "expense"]] = Query(None),
+) -> list[CategoryResponse]:
+    return await repo.get_all(type=type)
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)

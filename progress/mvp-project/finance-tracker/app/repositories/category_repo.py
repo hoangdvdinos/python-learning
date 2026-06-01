@@ -11,8 +11,11 @@ class CategoryRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get_all(self) -> list[Category]:
-        stmt = select(Category).where(Category.is_deleted == False)  # noqa: E712
+    async def get_all(self, type: str | None = None) -> list[Category]:
+        filters = [Category.is_deleted == False]  # noqa: E712
+        if type:
+            filters.append(Category.type == type)
+        stmt = select(Category).where(*filters)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
