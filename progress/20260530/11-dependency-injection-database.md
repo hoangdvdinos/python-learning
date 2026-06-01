@@ -464,7 +464,9 @@ class TimestampMixin:
 
 from sqlalchemy import String, Numeric, Boolean, Text, Integer
 from sqlalchemy.orm import Mapped, mapped_column
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, 
+
+
 from decimal import Decimal
 
 class Product(Base, TimestampMixin):

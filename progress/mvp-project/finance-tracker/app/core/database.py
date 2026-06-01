@@ -13,6 +13,7 @@ engine = create_async_engine(
     echo=settings.ENV == "development",
 )
 
+# Shared async session factory used by dependencies to open one DB session per request.
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,

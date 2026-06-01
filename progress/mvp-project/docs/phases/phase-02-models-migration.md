@@ -3,10 +3,10 @@
 ## Trạng Thái
 
 - [ ] Đang làm
-- [ ] Hoàn thành
+- [x] Hoàn thành
 
-**Bắt đầu:** ___________  
-**Kết thúc:** ___________
+**Bắt đầu:** 2026-05-31  
+**Kết thúc:** 2026-05-31
 
 ---
 
@@ -36,6 +36,8 @@ Nếu viết schema trước rồi model sau → rất dễ mismatch field name.
 
 **Kiến thức áp dụng:** Khối 11 — SQLAlchemy 2.0, DeclarativeBase
 
+**Lệnh:** *(không có lệnh shell — chỉ tạo file)*
+
 ---
 
 ### Bước 2.2 — Category Model
@@ -48,6 +50,8 @@ Nếu viết schema trước rồi model sau → rất dễ mismatch field name.
 - SQLAlchemy 2.0 dùng type annotation thay vì `Column(nullable=True)` cũ
 
 **Kiến thức áp dụng:** Khối 4 — Type hints, Khối 11 — Mapped[T]
+
+**Lệnh:** *(không có lệnh shell — chỉ tạo file)*
 
 ---
 
@@ -62,6 +66,8 @@ Nếu viết schema trước rồi model sau → rất dễ mismatch field name.
 
 **Kiến thức áp dụng:** Khối 11 — relationship, selectinload
 
+**Lệnh:** *(không có lệnh shell — chỉ tạo file)*
+
 ---
 
 ### Bước 2.4 — `__init__.py` cho models
@@ -73,15 +79,21 @@ Alembic scan `target_metadata` để biết schema.
 Nếu model chưa được import → Alembic không biết model tồn tại → không generate migration.
 File này là "registration point" — phải import trước khi Alembic chạy.
 
+**Lệnh:** *(không có lệnh shell — chỉ tạo file)*
+
 ---
 
 ### Bước 2.5 — Cấu hình Alembic
 
-**Làm gì:**
+**Làm gì:** Khởi tạo Alembic, sửa `alembic.ini` và `alembic/env.py` để dùng async engine.
+
 ```bash
-alembic init alembic
+uv run alembic init alembic
 ```
-Sau đó sửa `alembic/env.py` để dùng async engine.
+
+Sau đó:
+- Sửa `alembic.ini`: đổi `sqlalchemy.url` thành `sqlite+aiosqlite:///./finance.db`
+- Viết lại `alembic/env.py`: dùng `async_engine_from_config` + `asyncio.run()` thay vì `engine_from_config` đồng bộ
 
 **Tại sao `render_as_batch=True`?**
 SQLite không support `ALTER TABLE ... ADD COLUMN` / `DROP COLUMN`.
@@ -94,25 +106,47 @@ Nếu không bật → migration sẽ fail khi thay đổi schema trên SQLite.
 
 ### Bước 2.6 — Tạo và chạy migration
 
-**Làm gì:**
 ```bash
-alembic revision --autogenerate -m "init categories and transactions"
-alembic upgrade head
+uv run alembic revision --autogenerate -m "init categories and transactions"
+uv run alembic upgrade head
 ```
 
-**Verify:**
+**Verify bảng đã được tạo:**
+
 ```bash
 uv run python -c "
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
+import sqlalchemy
+
 async def check():
-    engine = create_async_engine('sqlite+aiosqlite:///finance.db')
+    engine = create_async_engine('sqlite+aiosqlite:///./finance.db')
     async with engine.connect() as conn:
-        result = await conn.execute(__import__('sqlalchemy').text('SELECT name FROM sqlite_master WHERE type=table'))
+        result = await conn.execute(sqlalchemy.text('SELECT name FROM sqlite_master WHERE type=\"table\"'))
         print([r[0] for r in result])
 asyncio.run(check())
 "
-# Mong đợi: ['categories', 'transactions', 'alembic_version']
+# Kết quả: ['alembic_version', 'categories', 'transactions']
+```
+
+**Verify schema chi tiết từng bảng:**
+
+```bash
+uv run python -c "
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine
+import sqlalchemy
+
+async def check():
+    engine = create_async_engine('sqlite+aiosqlite:///./finance.db')
+    async with engine.connect() as conn:
+        for tbl in ['categories', 'transactions']:
+            result = await conn.execute(sqlalchemy.text(f'PRAGMA table_info({tbl})'))
+            print(f'\n=== {tbl} ===')
+            for row in result:
+                print(f'  {row[1]:20} {row[2]}')
+asyncio.run(check())
+"
 ```
 
 ---
@@ -127,16 +161,15 @@ asyncio.run(check())
 | `relationship()` | ORM join giữa 2 bảng |
 | `alembic autogenerate` | Detect thay đổi schema tự động |
 | `render_as_batch` | Fix SQLite ALTER TABLE limitation |
+| `async_engine_from_config` | Alembic dùng async engine thay vì sync |
 
 ---
 
 ## Điểm Rút Ra
 
-*(Ghi sau khi hoàn thành phase)*
-
-- 
-- 
-- 
+- `alembic init alembic` chỉ tạo bộ khung — phải sửa cả `alembic.ini` (URL) lẫn `env.py` (async engine) mới chạy được
+- Model phải được import vào `__init__.py` trước khi `alembic revision --autogenerate` chạy, nếu không Alembic sẽ không detect được bảng
+- `render_as_batch=True` là bắt buộc khi dùng SQLite — thiếu cái này sẽ bể migration ngay lần đầu thêm/đổi cột
 
 ---
 
@@ -144,4 +177,4 @@ asyncio.run(check())
 
 | # | Lỗi | Fix | Entry trong error-log |
 |---|-----|-----|-----------------------|
-| | | | |
+| — | Không gặp lỗi trong phase này | — | — |
