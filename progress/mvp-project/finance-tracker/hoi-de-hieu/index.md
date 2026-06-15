@@ -10,6 +10,7 @@ same same tomcat
 sqlalchemy[asyncio] là cái đéo gì?
 Thư viện làm việc với db
 Kết nối db, tạo bảng, query, orm
+tương đương hibernate
 
 aiosqlite là cái đéo gì
 là driver làm việc với SQLite
