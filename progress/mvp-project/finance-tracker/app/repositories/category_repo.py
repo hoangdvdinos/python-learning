@@ -49,6 +49,7 @@ class CategoryRepository:
         category = await self.get_by_id(category_id)
 
         # Soft delete guard: block if active transactions exist
+        # Đếm xem bao nhiêu giao dịch chưa bị xóa liên quan đến category này, nếu có thì không cho xóa category
         stmt = select(func.count(Transaction.id)).where(
             Transaction.category_id == category_id,
             Transaction.is_deleted == False,  # noqa: E712
