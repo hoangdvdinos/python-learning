@@ -1,6 +1,10 @@
 """Seed script — tạo dữ liệu mẫu cho finance-tracker."""
 
 import asyncio
+import sys
+
+# Windows console mặc định dùng cp1252, không encode được emoji → force UTF-8
+sys.stdout.reconfigure(encoding="utf-8")
 from datetime import date
 from decimal import Decimal
 
